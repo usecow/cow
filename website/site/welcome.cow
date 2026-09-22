@@ -1,0 +1,22 @@
+<?js
+import { icon } from './_site.cow'
+import { securePage } from './_headers.mjs'
+securePage(res)
+res.setHeader('cache-control', 'no-store')
+?>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hello from Cow</title>
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/home-alt.css">
+</head>
+<body class="home-alt welcome-document">
+  <main class="alt-demo-output" id="demo">
+    <?js await include('./_welcome.cow') ?>
+  </main>
+  <a class="text-link" href="/#demo">Back to Cow <?= icon('arrow-line-up-right', 20) ?></a>
+</body>
+</html>

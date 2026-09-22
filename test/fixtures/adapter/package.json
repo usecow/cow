@@ -1,0 +1,13 @@
+{
+  "name": "@cowlang/test-resource",
+  "version": "1.0.0",
+  "type": "module",
+  "cow": { "native": ["./index.mjs"] },
+  "exports": {
+    "import": "./index.mjs",
+    "require": "./not-the-esm-adapter.cjs"
+  },
+  "peerDependencies": {
+    "cow": "*"
+  }
+}

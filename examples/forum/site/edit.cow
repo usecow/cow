@@ -1,0 +1,35 @@
+<?js
+import { HttpError, field } from 'cow:web'
+import { context, methods, submitted, displayError } from './_auth.cow'
+import { number, post, editable, editPost, postLink } from './_forum.cow'
+methods(req, res)
+const { current, user } = await context(req, res, { member: true })
+const id = number(req.get('id'))
+const saved = post(id)
+if (saved.user_id !== user.id) throw new HttpError(403, 'You can only edit your own posts.')
+if (req.method() !== 'POST') editable(id, user)
+let error = '', body = saved.body, version = saved.version
+if (req.method() === 'POST') {
+  try {
+    const values = submitted(req, current)
+    body = field(values, 'body'); version = field(values, 'version')
+    await editPost(user, id, values)
+    res.redirect(postLink(id), 303)
+  } catch (failure) { error = displayError(res, failure) }
+}
+await include('./_header.cow', { title: 'Edit your post', current, user })
+?>
+<div class="breadcrumb"><a href="<?= h(postLink(id)) ?>">← Back to the discussion</a></div>
+<section class="panel editor">
+  <p class="eyebrow"><?= h(saved.title) ?></p><h1>Edit your post</h1>
+  <p class="muted">Make a correction or add a little clarity.</p>
+  <?js if (error) { ?><p class="error" role="alert"><?= h(error) ?></p><?js } ?>
+  <form method="post" action="/edit?id=<?= id ?>">
+    <input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>">
+    <input type="hidden" name="version" value="<?= h(version) ?>">
+    <label for="body">Your post</label><textarea id="body" name="body" rows="10" required maxlength="10000"><?= h(body) ?></textarea>
+    <?js if (saved.locked || saved.removed_at !== null) { ?><p class="hint">Your changes were not saved. Copy your text somewhere safe before leaving.</p><?js } ?>
+    <div class="actions"><?js if (!saved.locked && saved.removed_at === null) { ?><button type="submit">Save changes</button><?js } ?><a href="<?= h(postLink(id)) ?>">Cancel</a></div>
+  </form>
+</section>
+<?js await include('./_footer.cow') ?>

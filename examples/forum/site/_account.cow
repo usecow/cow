@@ -1,0 +1,32 @@
+<?js
+const { mode, current, user, error, username } = locals
+const title = mode === 'install' ? 'Start your community' : mode === 'register' ? 'Find your place here' : 'Welcome back'
+await include('./_header.cow', { title, current, user })
+?>
+<section class="account panel">
+  <p class="eyebrow"><?= mode === 'install' ? 'One-time setup' : mode === 'register' ? 'Become a member' : 'Member login' ?></p>
+  <h1><?= title ?></h1>
+  <p class="muted"><?= mode === 'install' ? 'Create the administrator account. You’ll need the private key shown in your server terminal.' : mode === 'register' ? 'Choose a username, join a discussion, and make yourself at home.' : 'Your conversations are right where you left them.' ?></p>
+  <?js if (req.get('created') === '1' && mode === 'login') { ?><p class="notice">Account created. Log in to continue.</p><?js } ?>
+  <?js if (error) { ?><p class="error" role="alert"><?= h(error) ?></p><?js } ?>
+  <form method="post" action="/<?= mode ?>">
+    <input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>">
+    <?js if (mode === 'install') { ?>
+      <label for="setup-key">Private setup key</label>
+      <input id="setup-key" name="setupKey" type="password" required autocomplete="off">
+    <?js } ?>
+    <label for="username">Username</label>
+    <input id="username" name="username" value="<?= h(username) ?>" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_-]{3,32}" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="username-hint">
+    <p class="hint" id="username-hint">3–32 letters, numbers, underscores, or dashes. Not case-sensitive.</p>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" required minlength="12" maxlength="256" autocomplete="<?= mode === 'login' ? 'current-password' : 'new-password' ?>" aria-describedby="password-hint">
+    <p class="hint" id="password-hint">Use a unique passphrase of at least 12 characters.</p>
+    <?js if (mode !== 'login') { ?>
+      <label for="confirm-password">Confirm password</label>
+      <input id="confirm-password" name="confirmPassword" type="password" required minlength="12" maxlength="256" autocomplete="new-password">
+    <?js } ?>
+    <div class="actions"><button type="submit"><?= mode === 'login' ? 'Log in' : mode === 'install' ? 'Create administrator' : 'Create account' ?></button></div>
+  </form>
+  <?js if (mode === 'register') { ?><p class="hint">Keep your password safe. This small example has no email or password recovery.</p><?js } ?>
+</section>
+<?js await include('./_footer.cow') ?>

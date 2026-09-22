@@ -1,0 +1,234 @@
+/* Alternate homepage. All layout rules stay scoped to this page. */
+.home-alt { --alt-wash: var(--wash); }
+.home-alt main h2 { font-size: clamp(36px, 4.3vw, 54px); letter-spacing: -.034em; font-weight: 570; line-height: 1.1; }
+.home-alt main h3 { font-size: 23px; line-height: 1.2; letter-spacing: -.7px; font-weight: 520; }
+.home-alt .site-header { height: 94px; }
+.home-alt .alt-hero { padding-block: 52px 78px; text-align: center; }
+.home-alt .alt-intro { font-size: 15px; color: var(--green-dark); margin-bottom: 16px; }
+.home-alt .alt-hero h1 { font-size: clamp(64px, 7.8vw, 98px); line-height: 1.06; letter-spacing: -.042em; font-weight: 650; }
+.home-alt .alt-phrase { white-space: nowrap; }
+.home-alt .alt-marked { position: relative; white-space: nowrap; }
+.home-alt .alt-marked svg { position: absolute; width: 102%; height: 24px; top: calc(100% - 4px); left: 0; overflow: visible; }
+.home-alt .alt-marked path { fill: none; stroke: var(--green); stroke-width: 7; stroke-linecap: round; }
+.home-alt .alt-lede { max-width: 640px; margin: 54px auto 0; font-size: 21px; line-height: 1.5; color: var(--body); font-weight: 350; text-wrap: pretty; }
+.home-alt .alt-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 26px; margin-top: 28px; }
+.home-alt .alt-release { margin-top: 15px; color: var(--muted); font-size: 12px; }
+.home-alt .alt-demo-heading { margin-bottom: 26px; }
+.home-alt .alt-demo-heading h2 { font-size: 33px; letter-spacing: -1px; }
+.home-alt .alt-demo-heading p { color: var(--muted); font-size: 16px; margin-top: 10px; }
+.home-alt .alt-demo-frame { display: grid; grid-template-columns: 1.17fr 1fr; position: relative; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 38px -25px #25351d45; }
+.home-alt .alt-wave { position: absolute; right: 44px; bottom: 100%; width: 111px; height: 109px; overflow: hidden; pointer-events: none; }
+.home-alt .alt-wave img { width: 100%; max-width: none; }
+.home-alt .alt-editor { background: var(--dark); color: #f0f4ed; border-radius: 11px 0 0 11px; min-width: 0; display: flex; flex-direction: column; }
+.home-alt .alt-editor .code-window { border: 0; border-radius: 0; background: transparent; margin: 0; }
+.home-alt .alt-editor .code-window pre { padding: 22px 23px 10px; font-size: 12px; line-height: 1.85; overflow: auto; }
+.home-alt .alt-code-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; min-height: 47px; padding: 0 14px 5px 23px; font-size: 11px; color: #a9b7a3; }
+.home-alt .alt-browser { min-width: 0; border-radius: 0 11px 11px 0; background: #fff; display: flex; flex-direction: column; }
+.home-alt .alt-browser-bar { display: flex; align-items: center; gap: 12px; padding: 15px 22px; min-height: 54px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.home-alt .alt-browser-bar > .cow-icon { width: 16px; height: 16px; }
+.home-alt .alt-browser-bar > a { display: inline-flex; align-items: center; gap: 6px; font-family: Consolas, monospace; }
+.home-alt .alt-browser-bar > a .cow-icon { width: 13px; height: 13px; }
+.home-alt .alt-live { margin-left: auto; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+.home-alt .alt-live .cow-icon { color: var(--green-signal); }
+.home-alt .alt-demo-output { padding: 42px 40px 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.home-alt .alt-demo-output h2 { font-size: clamp(28px, 3vw, 40px); letter-spacing: -1.2px; overflow-wrap: anywhere; }
+.home-alt .alt-demo-output form { margin-top: 31px; }
+.home-alt .alt-demo-output label { display: block; font-size: 13px; color: var(--body); }
+.home-alt .alt-demo-output input { display: block; width: 100%; min-width: 0; margin-top: 9px; border: 1px solid var(--green-line); border-radius: 6px; padding: 13px 14px; background: #fcfdf9; font-size: 16px; color: var(--ink); }
+.home-alt .alt-demo-output button { background: var(--green); border: 0; border-radius: 6px; padding: 12px 21px; margin-top: 13px; font-size: 14px; }
+.home-alt .alt-demo-output button:hover { background: var(--green-hover); }
+.home-alt .alt-demo-output button:disabled { opacity: .65; }
+.home-alt .alt-demo-hint { padding: 0 40px 27px; font-size: 12px; color: var(--muted); min-height: 45px; }
+.home-alt .alt-demo-bottom { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 15px; }
+.home-alt .alt-demo-bottom p { font-size: 13px; color: var(--muted); }
+.home-alt .alt-demo-bottom .text-link { font-size: 13px; }
+.home-alt .alt-section-copy { max-width: 400px; }
+.home-alt .alt-section-copy > p { margin-top: 23px; font-size: 18px; line-height: 1.65; font-weight: 350; color: var(--body); text-wrap: pretty; }
+.home-alt .alt-section-copy > .text-link { margin-top: 24px; }
+.home-alt .alt-routes { display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 85px; padding-block: 122px; }
+.home-alt .alt-route-map { min-width: 0; }
+.home-alt .alt-route-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-bottom: 14px; padding: 0 15px; }
+.home-alt .alt-route-labels > span:first-child { display: flex; align-items: center; gap: 9px; }
+.home-alt .alt-route-pair { display: grid; grid-template-columns: minmax(0,1fr) 50px 96px; align-items: center; padding: 19px 15px; border-bottom: 1px solid var(--line); }
+.home-alt .alt-route-pair > span:first-child { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.home-alt .alt-route-pair > span:first-child .cow-icon { opacity: .8; }
+.home-alt .alt-route-pair code { font-size: 13px; }
+.home-alt .alt-route-line { color: var(--green-signal); text-align: center; font-size: 22px; }
+.home-alt .alt-route-url { background: var(--green-tint); border: 1px solid var(--green-line); border-radius: 5px; padding: 8px 9px; text-align: center; color: var(--green-dark); }
+.home-alt .alt-run-line { display: flex; align-items: center; gap: 13px; border-radius: 6px; background: var(--soft); margin-top: 19px; padding: 7px 11px 7px 18px; font-size: 13px; }
+.home-alt .alt-run-line > span { color: var(--green-dark); }
+.home-alt .alt-run-line button { margin-left: auto; color: var(--green-dark); }
+.home-alt .alt-run-line button:hover { background: var(--green-tint); }
+.home-alt .alt-barn { --barn: #20281a; --barn-card: #2b3523; --barn-card-hover: #334029; --barn-tile: #1a2114; --barn-gap: 20px; background: var(--barn); color: #f6f7ef; padding-block: 120px 128px; }
+.home-alt .alt-barn { position: relative; }
+/* The cow peeks over the top edge of the barn, in the space under the routes copy. */
+.home-alt .alt-barn-peek { width: 122px; height: 114px; bottom: calc(100% - 1px); left: max(28px, calc(50% - 290px)); }
+.home-alt .alt-barn-peek img { width: 116px; transform: translateY(15px) rotate(-5deg); transform-origin: 60% 100%; }
+.home-alt .alt-barn:hover .alt-barn-peek img { transform: translateY(4px) rotate(-2deg); }
+/* Decoration only: it never takes space from the content. The barn stands on the bottom edge of the band,
+   under the last card. The negative offsets cancel the empty margin inside the SVG (15.7% below, 9.3% right). */
+.home-alt .alt-barn-doodle { position: absolute; right: max(34px, calc(50% - 574px)); bottom: -23px; width: auto; height: 145px; pointer-events: none; }
+.home-alt .alt-barn .alt-section-heading > p:not(.alt-pill) { color: #c9cdb8; }
+.home-alt .alt-section-heading > .alt-pill { display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 26px; padding: 5px 13px 5px 10px; border-radius: 100px; background: var(--green); color: var(--green-ink); font-size: 12px; font-weight: 500; line-height: 1.5; }
+.home-alt .alt-section-heading > .alt-pill .cow-icon { width: 13px; height: 13px; }
+.home-alt .alt-section-heading { text-align: center; }
+.home-alt .alt-section-heading > p { margin: 23px auto 0; color: var(--body); font-size: 18px; line-height: 1.6; font-weight: 350; }
+.home-alt .alt-features { display: grid; grid-template-columns: repeat(4,1fr); gap: var(--barn-gap); margin-top: 64px; }
+.home-alt .alt-feature { position: relative; display: block; padding: 24px 24px 28px; border-radius: 14px; background: var(--barn-card); color: #f6f7ef; transition: background 200ms, transform 200ms; }
+.home-alt .alt-feature:hover { background: var(--barn-card-hover); color: #f6f7ef; transform: translateY(-3px); }
+.home-alt .alt-feature:focus-visible { outline-color: var(--green); }
+/* A small bridge joins each card to the next one, as if the row were one piece. */
+.home-alt .alt-feature:not(:last-child)::after { content: ""; position: absolute; left: 100%; top: calc(50% - 22px); width: var(--barn-gap); height: 44px; pointer-events: none; transition: inherit;
+  background: radial-gradient(circle at 50% 0, transparent 9.5px, var(--barn-card) 10px) top / 100% 50% no-repeat, radial-gradient(circle at 50% 100%, transparent 9.5px, var(--barn-card) 10px) bottom / 100% 50% no-repeat; }
+.home-alt .alt-feature-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 30px; border-radius: 9px; background: var(--barn-tile); color: var(--green-light); }
+.home-alt .alt-feature h3 { font-size: 18px; font-weight: 580; letter-spacing: -.025em; }
+.home-alt .alt-feature h3 .cow-icon { width: 15px; height: 15px; margin-left: 4px; color: var(--green-light); opacity: .75; }
+.home-alt .alt-feature p { margin-top: 18px; color: #ccd1bc; font-size: 16px; line-height: 1.6; }
+.home-alt .alt-grow { display: grid; grid-template-columns: 1.1fr .9fr; align-items: center; gap: 105px; padding-block: 125px 100px; }
+.home-alt .alt-module-example { min-width: 0; padding-right: 24px; }
+.home-alt .alt-module-example .code-window { background: #fff; border: 1px solid #a3b587; border-radius: 8px; margin: 0; color: #1d2a17; overflow: hidden; box-shadow: 0 2px 0 #a3b58766, 0 14px 30px -20px #2a2e1a59; }
+.home-alt .alt-module-example .pane-toolbar { background: #e6e9d8; border-bottom: 1px solid #c3cdad; min-height: 44px; }
+.home-alt .alt-module-example .filename { color: var(--green-dark); }
+.home-alt .alt-module-example .code-window pre { font-size: 12px; line-height: 1.85; padding: 24px 22px; overflow: auto; }
+.home-alt .alt-module-example :is(.cow-tag, .cow-comment, .cow-html-comment) { color: #66725f; }
+.home-alt .alt-module-example :is(.cow-keyword, .cow-html-attr) { color: #7a3e9d; }
+.home-alt .alt-module-example :is(.cow-string, .cow-html-string) { color: #3d5625; }
+.home-alt .alt-module-example :is(.cow-call, .cow-html-tag) { color: #0f6680; }
+.home-alt .alt-module-example :is(.cow-number, .cow-regex) { color: #8a5a00; }
+.home-alt .alt-helper-file { transform: rotate(-2deg); }
+.home-alt .alt-page-file { position: relative; margin: -11px -24px 0 24px; transform: rotate(1deg); }
+.home-alt .alt-page-file .code-window { box-shadow: 0 2px 0 #a3b58766, 0 22px 40px -22px #2a2e1a80; }
+.home-alt .alt-section-copy > .alt-php-note { margin-top: 21px; font-size: 13px; }
+.home-alt .alt-php-note a { display: inline-flex; align-items: center; gap: 5px; vertical-align: baseline; color: var(--green-dark); text-decoration: none; }
+.home-alt .alt-php-note a > span { text-decoration: underline; text-underline-offset: 3px; }
+.home-alt .alt-php-note .cow-icon { display: block; }
+.home-alt .alt-familiar { display: grid; grid-template-columns: 1fr 1fr; column-gap: 100px; padding-block: 15px 105px; }
+.home-alt .alt-familiar section { text-align: center; }
+.home-alt .alt-familiar h2 { font-size: 35px; letter-spacing: -1.15px; }
+.home-alt .alt-familiar p { margin-top: 18px; font-size: 16px; line-height: 1.65; color: var(--body); }
+.home-alt .alt-familiar .text-link { margin-top: 16px; font-size: 14px; }
+.home-alt .alt-language-marks { height: 114px; display: flex; align-items: center; justify-content: center; gap: 23px; }
+.home-alt .alt-language-marks img { width: 64px; height: 64px; }
+.home-alt .alt-npm-mark { height: 114px; display: grid; place-items: center; }
+.home-alt .alt-npm-mark img { width: 110px; height: 110px; }
+.home-alt .alt-language-marks img, .home-alt .alt-npm-mark img { transition: transform 200ms; }
+.home-alt .alt-language-marks a:hover img, .home-alt .alt-npm-mark:hover img { transform: rotate(-4deg) translateY(-3px); }
+.home-alt .alt-runtime { position: relative; background: var(--dark); color: #f5f8ee; padding-block: 80px 67px; }
+/* Decoration only. Cow rests on a hay bale on the top edge of the pasture band, between the two columns above.
+   The offset cancels the 6.6% empty margin under the art. */
+.home-alt .alt-hay-doodle { position: absolute; bottom: calc(100% - 8px); left: 50%; width: auto; height: 112px; transform: translateX(-50%); pointer-events: none; }
+.home-alt .alt-runtime .alt-section-heading > p { color: #c9cdb8; }
+.home-alt .alt-runtime-options { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; max-width: 760px; margin: 50px auto 38px; }
+.home-alt .alt-runtime-option { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 22px 12px; border: 1px solid #ffffff15; border-radius: 9px; background: #f8faf4; color: var(--ink); min-height: 146px; transform: translateY(var(--alt-drop)) rotate(var(--alt-turn)); transition: transform 260ms cubic-bezier(.2,.8,.2,1), background 200ms; }
+.home-alt .alt-runtime-option:nth-child(1) { --alt-drop: 3px; --alt-turn: -3deg; }
+.home-alt .alt-runtime-option:nth-child(2) { --alt-drop: 10px; --alt-turn: 2deg; }
+.home-alt .alt-runtime-option:nth-child(3) { --alt-drop: 7px; --alt-turn: -2deg; }
+.home-alt .alt-runtime-option:nth-child(4) { --alt-drop: 2px; --alt-turn: 3deg; }
+.home-alt .alt-runtime-option[aria-pressed=true] { background: var(--green); transform: translateY(-12px) rotate(0deg); }
+.home-alt .alt-runtime-option:hover { transform: translateY(-7px) rotate(0deg); }
+.home-alt .alt-runtime-option:focus-visible { outline-color: var(--green); }
+.home-alt .alt-runtime-option img { width: 56px; height: 56px; object-fit: contain; }
+.home-alt .alt-runtime-option strong { font-size: 16px; font-weight: 500; }
+.home-alt .alt-runtime-command { display: flex; align-items: center; gap: 14px; max-width: 510px; margin: auto; padding: 9px 15px 9px 22px; border: 1px solid #ffffff24; border-radius: 6px; font-size: 14px; }
+.home-alt .alt-runtime-command > span { color: var(--green); }
+.home-alt .alt-runtime-command button { margin-left: auto; }
+.home-alt .alt-runtime-link { display: block; width: fit-content; margin: 24px auto 0; font-size: 13px; color: var(--green-light); }
+.home-alt .alt-runtime-link:hover { color: #fff; }
+.home-alt .alt-examples { display: grid; grid-template-columns: .9fr 1.1fr; gap: 90px; align-items: center; padding-block: 113px 93px; }
+.home-alt .alt-example-list { position: relative; padding-top: 76px; }
+.home-alt .alt-curious { width: 79px; height: 76px; overflow: hidden; margin-left: 20px; position: absolute; top: 0; }
+.home-alt .alt-curious img { width: 79px; }
+.home-alt .alt-example-list > a { padding: 24px 0; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.home-alt .alt-example-list > a > .cow-icon { width: 22px; height: 22px; }
+.home-alt .alt-example-list p { margin-top: 9px; color: var(--body); font-size: 15px; line-height: 1.55; }
+.home-alt .alt-start { text-align: center; padding-block: 42px 165px; }
+.home-alt .alt-start h2 { font-size: clamp(56px, 6.6vw, 78px); letter-spacing: -.04em; }
+.home-alt .alt-start h2 span { color: var(--green-dark); }
+.home-alt .alt-start > p:not(.alt-release) { margin-top: 23px; font-size: 20px; color: var(--body); }
+.home-alt .alt-start .alt-actions { margin-top: 30px; }
+.home-alt.welcome-document { max-width: 540px; margin: 10vh auto; padding: 20px; }
+.home-alt.welcome-document .alt-demo-output { padding: 24px 0; }
+.home-alt.welcome-document > .text-link { font-size: 14px; }
+
+@media (max-width: 1000px) {
+  .home-alt .alt-routes, .home-alt .alt-grow, .home-alt .alt-examples { gap: 45px; }
+  .home-alt .alt-demo-output { padding-inline: 27px; }
+  .home-alt .alt-demo-hint { padding-inline: 27px; }
+  .home-alt .alt-features { grid-template-columns: repeat(2,1fr); }
+  .home-alt .alt-feature:not(:last-child)::after { display: none; }
+  .home-alt .alt-familiar { gap: 40px; }
+}
+@media (max-width: 720px) {
+  .home-alt .wrap { width: calc(100% - 40px); }
+  .home-alt .site-header { height: 82px; }
+  .home-alt main h2 { font-size: 36px; letter-spacing: -.034em; }
+  .home-alt .alt-hero { padding-block: 42px 64px; }
+  .home-alt .alt-intro { font-size: 13px; margin-bottom: 17px; }
+  .home-alt .alt-hero h1 { font-size: min(12.2vw, clamp(50px, 9.2vw, 66px)); letter-spacing: -.045em; }
+  .home-alt .alt-marked svg { height: 16px; top: calc(100% - 2px); }
+  .home-alt .alt-lede { margin-top: 40px; font-size: 18px; max-width: 450px; }
+  .home-alt .alt-actions { gap: 18px; margin-top: 24px; }
+  .home-alt .alt-actions .button { font-size: 14px; min-height: 48px; padding: 13px 20px; gap: 18px; }
+  .home-alt .alt-actions .text-link { font-size: 14px; }
+  .home-alt .alt-demo-heading { margin-bottom: 23px; padding-right: 55px; }
+  .home-alt .alt-demo-heading h2 { font-size: 28px; }
+  .home-alt .alt-demo-heading p { font-size: 14px; max-width: 270px; line-height: 1.5; }
+  .home-alt .alt-demo-frame { grid-template-columns: 1fr; }
+  .home-alt .alt-wave { width: 76px; height: 75px; right: 2px; }
+  .home-alt .alt-editor { border-radius: 11px 11px 0 0; }
+  .home-alt .alt-editor .pane-toolbar { padding-inline: 14px; gap: 8px; }
+  .home-alt .alt-editor .example-switch button { font-size: 11px; padding-inline: 8px; }
+  .home-alt .alt-editor .code-window pre { padding: 17px 16px 8px; font-size: 11px; line-height: 1.8; }
+  .home-alt .alt-code-footer { padding-left: 16px; }
+  .home-alt .alt-browser { border-radius: 0 0 11px 11px; }
+  .home-alt .alt-browser-bar { padding-inline: 20px; }
+  .home-alt .alt-demo-output { padding: 32px 24px 23px; }
+  .home-alt .alt-demo-output h2 { font-size: 33px; }
+  .home-alt .alt-demo-output form { margin-top: 25px; }
+  .home-alt .alt-demo-hint { padding: 0 24px 24px; }
+  .home-alt .alt-demo-bottom { align-items: flex-start; flex-direction: column; gap: 3px; margin-top: 18px; }
+  .home-alt .alt-demo-bottom p { max-width: 300px; line-height: 1.6; }
+  .home-alt .alt-routes { grid-template-columns: 1fr; gap: 37px; padding-block: 70px; }
+  .home-alt .alt-section-copy { max-width: 100%; }
+  .home-alt .alt-section-copy > p { font-size: 17px; margin-top: 19px; }
+  .home-alt .alt-section-copy > .text-link { margin-top: 15px; }
+  .home-alt .alt-route-pair { padding-inline: 5px; grid-template-columns: minmax(0,1fr) 27px 86px; }
+  .home-alt .alt-route-pair > span:first-child { gap: 8px; }
+  .home-alt .alt-route-pair code { font-size: 12px; }
+  .home-alt .alt-route-labels { padding-inline: 5px; }
+  .home-alt .alt-barn { --barn-gap: 14px; padding-block: 70px 74px; }
+  .home-alt .alt-barn-peek { width: 92px; height: 86px; left: auto; right: 24px; }
+  .home-alt .alt-barn-doodle { height: 78px; bottom: -12px; right: 13px; }
+  .home-alt .alt-barn-peek img { width: 88px; transform: translateY(11px) rotate(-5deg); }
+  .home-alt .alt-section-heading > p { font-size: 16px; margin-top: 20px; }
+  .home-alt .alt-section-heading > p br { display: none; }
+  .home-alt .alt-features { margin-top: 40px; }
+  .home-alt .alt-feature { padding: 20px 20px 24px; border-radius: 14px; }
+  .home-alt .alt-feature-icon { margin-bottom: 26px; }
+  .home-alt .alt-feature h3 { font-size: 18px; }
+  .home-alt .alt-feature p { font-size: 14.5px; }
+  .home-alt .alt-grow { grid-template-columns: 1fr; padding-block: 70px; gap: 35px; }
+  .home-alt .alt-grow .alt-section-copy { grid-row: 1; }
+  .home-alt .alt-module-example { margin-top: 5px; }
+  .home-alt .alt-module-example .code-window pre { padding: 20px 16px; font-size: 10px; }
+  .home-alt .alt-familiar { grid-template-columns: 1fr; gap: 48px; padding-block: 0 68px; }
+  .home-alt .alt-familiar h2 { font-size: 32px; }
+  .home-alt .alt-familiar p { font-size: 16px; }
+  .home-alt .alt-runtime { padding-block: 65px 53px; }
+  .home-alt .alt-hay-doodle { height: 70px; bottom: calc(100% - 5px); left: auto; right: 14px; transform: none; }
+  .home-alt .alt-runtime-options { grid-template-columns: repeat(2,1fr); gap: 32px 20px; max-width: 350px; margin: 42px auto 31px; }
+  .home-alt .alt-runtime-option { min-height: 133px; padding: 18px 10px; }
+  .home-alt .alt-runtime-command { padding-inline: 12px; gap: 9px; font-size: 12px; }
+  .home-alt .alt-runtime-command .copy-button { font-size: 11px; }
+  .home-alt .alt-examples { grid-template-columns: 1fr; padding-block: 70px; gap: 40px; }
+  .home-alt .alt-example-list { margin-top: 10px; }
+  .home-alt .alt-start { padding-block: 10px 140px; }
+  .home-alt .alt-start h2 { font-size: min(13vw, 58px); letter-spacing: -.04em; }
+  .home-alt .alt-start > p:not(.alt-release) { font-size: 17px; }
+}
+@media (max-width: 520px) {
+  .home-alt .alt-features { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-alt *, .home-alt *::before, .home-alt *::after { scroll-behavior: auto; transition: none !important; animation: none !important; }
+}

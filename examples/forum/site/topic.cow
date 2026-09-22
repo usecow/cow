@@ -1,0 +1,56 @@
+<?js
+import { field } from 'cow:web'
+import { context, methods, submitted, displayError } from './_auth.cow'
+import { topic, posts, number, pageNumber, reply, creationKey, postLink, date } from './_forum.cow'
+methods(req, res)
+const { current, user } = await context(req, res, { member: req.method() === 'POST' })
+const id = number(req.get('id'))
+const page = pageNumber(req.get('page'))
+let error = '', body = '', key = creationKey()
+if (req.method() === 'POST') {
+  try {
+    const values = submitted(req, current)
+    body = field(values, 'body'); key = field(values, 'creationKey')
+    const postId = await reply(user, id, values)
+    res.redirect(postLink(postId), 303)
+  } catch (failure) { error = displayError(res, failure) }
+}
+const discussion = topic(id)
+const listing = posts(id, page)
+await include('./_header.cow', { title: discussion.title, current, user })
+?>
+<div class="breadcrumb"><a href="/">← All discussions</a></div>
+<div class="page-heading topic-heading">
+  <div><p class="eyebrow"><?= discussion.locked ? 'Discussion locked' : 'Community discussion' ?></p><h1><?= h(discussion.title) ?></h1><p class="meta">Started by <?= h(discussion.username) ?> · <?= listing.count ?> <?= listing.count === 1 ? 'post' : 'posts' ?></p></div>
+  <?js if (user?.role === 'admin') { ?><a class="button secondary" href="/moderate?action=<?= discussion.locked ? 'unlock' : 'lock' ?>&amp;id=<?= id ?>"><?= discussion.locked ? 'Unlock topic' : 'Lock topic' ?></a><?js } ?>
+</div>
+<?js if (discussion.locked) { ?><p class="notice">This topic is locked. You can read the conversation, but replies and edits are closed.</p><?js } ?>
+<?js if (error) { ?><p class="error" role="alert"><?= h(error) ?></p><?js } ?>
+<section class="posts" aria-label="Posts in this discussion">
+<?js for (const item of listing.rows) { ?>
+  <article class="panel post" id="post-<?= item.id ?>">
+    <header class="post-header"><div class="author"><span class="avatar" aria-hidden="true"><?= h(item.username[0].toUpperCase()) ?></span><strong><?= h(item.username) ?></strong><?js if (item.role === 'admin') { ?><span class="badge">Admin</span><?js } ?></div><a class="meta permalink" href="/topic?id=<?= id ?>&amp;page=<?= page ?>#post-<?= item.id ?>" aria-label="Link to post <?= item.id ?>"><time datetime="<?= new Date(item.created_at).toISOString() ?>"><?= date(item.created_at) ?></time></a></header>
+    <?js if (item.removed_at !== null) { ?><p class="removed">This post was removed by the administrator.</p><?js } else { ?>
+      <div class="post-body"><?= h(item.body) ?></div>
+      <footer class="post-footer">
+        <span class="meta"><?js if (item.edited_at !== null) { ?>Edited <?= date(item.edited_at) ?><?js } ?></span>
+        <div class="post-actions"><?js if (user?.id === item.user_id && !discussion.locked) { ?><a href="/edit?id=<?= item.id ?>">Edit your post</a><?js } ?><?js if (user?.role === 'admin') { ?><a class="danger-link" href="/moderate?action=remove&amp;id=<?= item.id ?>">Remove post</a><?js } ?></div>
+      </footer>
+    <?js } ?>
+  </article>
+<?js } ?>
+</section>
+<?js await include('./_pagination.cow', { page, pages: listing.pages, base: `/topic?id=${id}&` }) ?>
+<?js if (user && (!discussion.locked || body)) { ?>
+<section class="panel editor reply" aria-labelledby="reply-heading">
+  <h2 id="reply-heading"><?= discussion.locked ? 'Your unsent reply' : 'Add to the conversation' ?></h2>
+  <form method="post" action="/topic?id=<?= id ?>&amp;page=<?= page ?>">
+    <input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>">
+    <input type="hidden" name="creationKey" value="<?= h(key) ?>">
+    <label for="body">Your reply</label><textarea id="body" name="body" rows="6" maxlength="10000" required aria-describedby="body-hint"><?= h(body) ?></textarea>
+    <p class="hint" id="body-hint"><?= discussion.locked ? 'This text was not saved. Copy it somewhere safe before leaving.' : 'Be thoughtful. Plain text only, up to 10,000 characters.' ?></p>
+    <?js if (!discussion.locked) { ?><div class="actions"><button type="submit">Post reply</button><span class="meta">Posting as <?= h(user.username) ?></span></div><?js } ?>
+  </form>
+</section>
+<?js } else if (!user && !discussion.locked) { ?><p class="notice"><a href="/login">Log in</a> to join this conversation.</p><?js } ?>
+<?js await include('./_footer.cow') ?>

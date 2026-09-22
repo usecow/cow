@@ -1,0 +1,17 @@
+<?js
+import { field } from 'cow:web'
+let name = 'friend'
+if (req.method() === 'POST') {
+  const form = await req.formData()
+  const value = field(form, 'name')
+  name = value.trim().slice(0, 60) || 'friend'
+}
+?>
+<h2>Hello, <?= h(name) ?>!</h2>
+<form method="post">
+  <label>Your name
+    <input name="name" maxlength="60"
+      placeholder="Clover">
+  </label>
+  <button>Say hello</button>
+</form>

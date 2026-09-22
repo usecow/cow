@@ -1,0 +1,7 @@
+{
+  "Cow code block": { "prefix": "cowjs", "body": ["<?js", "$0", "?>"], "description": "Server-side code block in a Cow page" },
+  "Cow typed code block": { "prefix": "cowts", "body": ["<?ts", "$0", "?>"], "description": "Server-side code with optional TypeScript annotations" },
+  "Cow include": { "prefix": "cowinclude", "body": "await include('${1:./_part.cow}', { ${2:title}: ${3:value} })", "description": "Await a Cow page using explicit locals" },
+  "Cow helper": { "prefix": "cowhelper", "body": ["<?ts", "export function ${1:greeting}(name: string): string {", "  return name", "}", "$0"], "description": "Code-only Cow helper with a named export" },
+  "Cow import": { "prefix": "cowimport", "body": "import { ${1:greeting} } from '${2:./_helpers.cow}'", "description": "Import a private Cow helper" }
+}

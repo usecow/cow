@@ -1,0 +1,43 @@
+<?js
+import { sqlite } from 'cow:sqlite'
+import config from './_config.cow'
+
+const db = await sqlite(config.database)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS forum_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('admin', 'member')),
+    created_at INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS forum_one_admin ON forum_users(role) WHERE role = 'admin';
+  CREATE TABLE IF NOT EXISTS forum_topics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES forum_users(id),
+    created_at INTEGER NOT NULL,
+    locked INTEGER NOT NULL DEFAULT 0 CHECK(locked IN (0, 1)),
+    version INTEGER NOT NULL DEFAULT 1,
+    last_post_id INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE INDEX IF NOT EXISTS forum_activity ON forum_topics(last_post_id DESC);
+  CREATE TABLE IF NOT EXISTS forum_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic_id INTEGER NOT NULL REFERENCES forum_topics(id),
+    user_id INTEGER NOT NULL REFERENCES forum_users(id),
+    body TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    edited_at INTEGER,
+    removed_at INTEGER,
+    version INTEGER NOT NULL DEFAULT 1,
+    creation_key TEXT NOT NULL,
+    fingerprint TEXT NOT NULL,
+    UNIQUE(user_id, creation_key)
+  );
+  CREATE INDEX IF NOT EXISTS forum_post_order ON forum_posts(topic_id, id);
+  CREATE TABLE IF NOT EXISTS forum_login_attempts (
+    username TEXT PRIMARY KEY, attempts INTEGER NOT NULL, until_at INTEGER NOT NULL
+  );
+`)
+export default db

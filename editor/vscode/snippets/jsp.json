@@ -1,0 +1,3 @@
+{
+  "Cow JavaScript block": { "prefix": "cowjs", "body": ["<?js", "$0", "?>"], "description": "Server-side JavaScript block" }
+}

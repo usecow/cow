@@ -1,0 +1,12 @@
+{
+  "name": "cow-example-mininews",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "MiniNews: a single-file Cow news editor with Markdown",
+  "scripts": {
+    "start": "node ../../bin/cow.mjs site",
+    "test": "node --test test/*.test.mjs",
+    "preview": "node test/preview.mjs"
+  }
+}

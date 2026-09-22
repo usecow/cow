@@ -1,0 +1,8 @@
+<?js const { page, pages, base } = locals ?>
+<?js if (pages > 1) { ?>
+<nav class="pagination" aria-label="Pagination">
+  <?js if (page > 1) { ?><a href="<?= h(base) ?>page=<?= page - 1 ?>" rel="prev">← Previous</a><?js } ?>
+  <span>Page <?= page ?> of <?= pages ?></span>
+  <?js if (page < pages) { ?><a href="<?= h(base) ?>page=<?= page + 1 ?>" rel="next">Next →</a><?js } ?>
+</nav>
+<?js } ?>

@@ -1,0 +1,32 @@
+<?js
+import { field } from 'cow:web'
+import { context, methods, submitted, displayError } from './_auth.cow'
+import { createTopic, creationKey, postLink } from './_forum.cow'
+methods(req, res)
+const { current, user } = await context(req, res, { member: true })
+let error = '', title = '', body = '', key = creationKey()
+if (req.method() === 'POST') {
+  try {
+    const values = submitted(req, current)
+    title = field(values, 'title'); body = field(values, 'body'); key = field(values, 'creationKey')
+    const id = await createTopic(user, values)
+    res.redirect(postLink(id), 303)
+  } catch (failure) { error = displayError(res, failure) }
+}
+await include('./_header.cow', { title: 'Start a discussion', current, user })
+?>
+<div class="breadcrumb"><a href="/">← All discussions</a></div>
+<section class="panel editor">
+  <p class="eyebrow">Something on your mind?</p><h1>Start a discussion</h1>
+  <p class="muted">A clear title and a little context go a long way.</p>
+  <?js if (error) { ?><p class="error" role="alert"><?= h(error) ?></p><?js } ?>
+  <form method="post" action="/new">
+    <input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>">
+    <input type="hidden" name="creationKey" value="<?= h(key) ?>">
+    <label for="title">Topic title</label><input id="title" name="title" value="<?= h(title) ?>" required maxlength="120">
+    <label for="body">Your post</label><textarea id="body" name="body" rows="10" required maxlength="10000" aria-describedby="body-hint"><?= h(body) ?></textarea>
+    <p class="hint" id="body-hint">Plain text, up to 10,000 characters. HTML is displayed as text.</p>
+    <div class="actions"><button type="submit">Post discussion</button><a href="/">Cancel</a></div>
+  </form>
+</section>
+<?js await include('./_footer.cow') ?>

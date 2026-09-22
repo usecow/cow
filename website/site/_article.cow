@@ -1,0 +1,24 @@
+<?js
+import { securePage } from './_headers.mjs'
+import { head, header, footer, codeBlock, icon } from './_site.cow'
+import { docs } from './_docs.cow'
+import { comparisons, examples } from './_pages.cow'
+securePage(res)
+const collection = locals.collection || 'docs'
+const entries = collection === 'why' ? comparisons : collection === 'examples' ? examples : docs
+const page = entries.find(item => item.slug === locals.slug)
+if (!page) { res.status(404); throw new Error('Page not found') }
+const label = collection === 'why' ? 'Compare' : collection === 'examples' ? 'Examples' : 'Documentation'
+?>
+<!doctype html>
+<html lang="en">
+<head><?= head(page.title + ' — Cow', page.description) ?></head>
+<body><?= header(collection) ?>
+<main id="main" class="manual-layout wrap">
+<aside class="manual-sidebar"><details open><summary><?= h(label) ?></summary><nav aria-label="<?= h(label) ?>"><?js for (const entry of entries) { ?><a href="/<?= h(collection) ?>/<?= h(entry.slug) ?>"<?= entry.slug === page.slug ? ' aria-current="page"' : '' ?>><?= h(entry.title) ?></a><?js } ?></nav></details><a class="back-link" href="/<?= h(collection) ?>/"><?= icon('arrow-line-left', 20) ?> <?= h(label) ?></a></aside>
+<article>
+<header class="article-heading"><h1><?= h(page.title) ?></h1><p><?= h(page.description) ?></p></header>
+<nav class="article-toc" aria-label="On this page"><?js for (const section of page.sections) { ?><a href="#<?= h(section.id) ?>"><?= h(section.title) ?></a><?js } ?></nav>
+<div class="article-body"><?js for (const section of page.sections) { ?><section id="<?= h(section.id) ?>"><h2><?= h(section.title) ?></h2><?js for (const [index, block] of section.blocks.entries()) { if (block.code !== undefined) { echo(codeBlock(block.code, block.label || 'Code', page.slug + '-' + section.id + '-' + index)) } else { ?><div class="prose-block"><?= block.html ?></div><?js } } ?></section><?js } ?></div>
+<nav class="article-related" aria-label="Related guides"><?js for (const slug of (page.related || [])) { const related = docs.find(item => item.slug === slug); if (related) { ?><a href="/docs/<?= h(slug) ?>"><?= h(related.title) ?> <?= icon('arrow-line-right', 20) ?></a><?js } } ?></nav>
+</article></main><?= footer() ?></body></html>

@@ -1,0 +1,3 @@
+<?js
+import { accountPage } from './_auth.cow'
+await include('./_account.cow', await accountPage('register', req, res))

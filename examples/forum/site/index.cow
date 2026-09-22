@@ -1,0 +1,30 @@
+<?js
+import { context, methods } from './_auth.cow'
+import config from './_config.cow'
+import { topics, pageNumber, date } from './_forum.cow'
+methods(req, res, ['GET', 'HEAD'])
+const { current, user } = await context(req, res)
+const page = pageNumber(req.get('page'))
+const listing = topics(page)
+await include('./_header.cow', { title: 'Discussions', current, user })
+?>
+<div class="page-heading">
+  <div><p class="eyebrow">The community board</p><h1>Good conversations start here.</h1><p class="muted">Ask a question. Share a small discovery. Help someone along.</p></div>
+  <a class="button" href="<?= user ? '/new' : '/login' ?>"><?= user ? 'Start a discussion' : 'Log in to post' ?></a>
+</div>
+<section class="panel discussions" aria-labelledby="discussions-heading">
+  <div class="section-heading"><h2 id="discussions-heading">All discussions</h2><span class="muted count"><?= listing.count ?> <?= listing.count === 1 ? 'topic' : 'topics' ?></span></div>
+  <?js if (!listing.rows.length) { ?>
+    <div class="empty"><h3>There’s room for the first word.</h3><p class="muted">No discussions yet. Introduce yourself or ask the question on your mind.</p><a href="<?= user ? '/new' : config.registrationOpen ? '/register' : '/login' ?>"><?= user ? 'Start the first discussion →' : config.registrationOpen ? 'Join the community →' : 'Log in to post →' ?></a></div>
+  <?js } ?>
+  <ol class="topic-list">
+  <?js for (const item of listing.rows) { ?>
+    <li class="topic-row">
+      <div class="topic-copy"><h3><a href="/topic?id=<?= item.id ?>"><?= h(item.title) ?></a><?js if (item.locked) { ?> <span class="badge">Locked</span><?js } ?></h3><p class="meta">Started by <?= h(item.username) ?> · <time datetime="<?= new Date(item.created_at).toISOString() ?>"><?= date(item.created_at) ?></time></p></div>
+      <a class="reply-count" href="/topic?id=<?= item.id ?>"><strong><?= item.post_count - 1 ?></strong><span><?= item.post_count === 2 ? 'reply' : 'replies' ?></span></a>
+    </li>
+  <?js } ?>
+  </ol>
+</section>
+<?js await include('./_pagination.cow', { page, pages: listing.pages, base: '/?' }) ?>
+<?js await include('./_footer.cow') ?>

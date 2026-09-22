@@ -1,0 +1,7 @@
+<?js
+import { context, methods, submitted } from './_auth.cow'
+methods(req, res, ['POST'])
+const { current } = await context(req, res)
+submitted(req, current)
+current.destroy()
+res.redirect('/', 303)

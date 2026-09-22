@@ -1,0 +1,40 @@
+<?js
+/* Cow-rendered icon browser. Icon data and geometry live in ../icons/icons.mjs;
+   the standalone SVG files and sprite are exported by ../icons/build.mjs.
+   Styling and behaviour: /assets/icons/gallery.css and /assets/icons/gallery.mjs. */
+import { securePage } from './_headers.mjs'
+import { cowIcon, icons, variants } from '../icons/icons.mjs'
+securePage(res)
+
+const baseGroups = { terminal: 'Development', play: 'Development', file: 'Files', folder: 'Files', book: 'Files', copy: 'Files', search: 'Navigation', 'arrow-right': 'Arrows', check: 'Navigation', message: 'Communication', heart: 'Communication', leaf: 'Nature' }
+const groups = Object.fromEntries(Object.entries(icons).map(([name, icon]) => [name, icon.category ?? baseGroups[name] ?? 'Controls']))
+const count = Object.keys(icons).length
+const categories = [...new Set(Object.values(groups))].sort().map(group => '<button type="button" class="category" data-category="' + group + '" aria-pressed="false"><span>' + group + '</span><span>' + Object.values(groups).filter(value => value === group).length + '</span></button>').join('\n')
+const tiles = Object.entries(icons).map(([name, icon], index) => '<button class="icon-tile" type="button" data-name="' + name + '" data-label="' + icon.label + '" data-search="' + name + ' ' + icon.tags + '" data-category="' + groups[name] + '" data-order="' + index + '" aria-label="' + icon.label + '" title="' + icon.label + '" aria-haspopup="dialog">' + cowIcon(name) + '</button>').join('\n')
+const templates = variants.flatMap(variant => Object.keys(icons).map(name => '<template id="' + name + '-' + variant + '">' + cowIcon(name, { variant }) + '</template>')).join('\n')
+?>
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cow Icons</title><link rel="icon" href="/assets/cow-mark.svg"><link rel="stylesheet" href="/assets/icons/gallery.css"><script type="module" src="/assets/icons/gallery.mjs"></script></head>
+<body><a class="skip-link" href="#main">Skip to icons</a>
+<aside class="sidebar" aria-label="Icon controls">
+<a class="brand" href="/"><img src="/assets/cow-mark.svg" alt="" width="30" height="30">Cow <span>Icons</span></a>
+<button type="button" id="toggle-controls" aria-expanded="false" aria-controls="customizer">Customize icons</button>
+<section class="customizer" id="customizer" aria-labelledby="customizer-title">
+<div class="section-title"><h2 id="customizer-title">Customizer</h2><button id="reset" class="icon-button" type="button" aria-label="Reset customizer" title="Reset customizer">↻</button></div>
+<fieldset><legend>Style</legend><div class="segmented"><label><input type="radio" name="variant" value="stroke" checked><span>Stroke</span></label><label><input type="radio" name="variant" value="solid"><span>Solid</span></label><label><input type="radio" name="variant" value="duotone"><span>Duo Stroke</span></label><label><input type="radio" name="variant" value="duotone-solid"><span>Duo Solid</span></label></div></fieldset>
+<label class="control-label" for="color">Color</label><div class="color-control"><input type="color" id="color" value="#f4f6f0" aria-label="Icon color"><input id="color-hex" aria-label="Icon hex color" value="#f4f6f0" maxlength="7" spellcheck="false"></div>
+<div id="accent-control" hidden><label class="control-label" for="accent">Accent</label><div class="color-control"><input type="color" id="accent" value="#b8db7c" aria-label="Accent color"><input id="accent-hex" aria-label="Accent hex color" value="#b8db7c" maxlength="7" spellcheck="false"></div></div>
+<label class="range-label" for="weight"><span>Stroke width</span><output id="weight-value" for="weight">2px</output></label><input id="weight" type="range" min="1" max="3" step="0.25" value="2">
+<label class="range-label" for="size"><span>Size</span><output id="size-value" for="size">24px</output></label><input id="size" type="range" min="16" max="48" step="4" value="24">
+<label class="switch-label" for="absolute"><span>Absolute stroke width</span><input id="absolute" type="checkbox" role="switch"></label><p id="solid-note" class="control-note" hidden>Solid shapes have a fixed weight.</p>
+</section>
+<nav class="categories" aria-label="Icon categories"><h2>View</h2><button type="button" class="category active" data-category="All" aria-pressed="true"><span>All icons</span><span><?= count ?></span></button><h3>Categories</h3><?= categories ?></nav>
+<div class="sidebar-footer"><label for="theme">Canvas<select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label><a href="https://lucide.dev/contribute/icons/design-principles">Design principles ↗</a></div>
+</aside>
+<main id="main" tabindex="-1"><div class="toolbar"><div class="search-wrap"><svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg><input type="search" id="search" aria-label="Search icons" placeholder="Search <?= count ?> icons…" autocomplete="off"><kbd>Ctrl K</kbd></div><label class="sort-label"><span class="sr-only">Sort icons</span><select id="sort"><option value="default">Default order</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option></select></label></div>
+<div class="results-heading"><h1 id="category-title">All icons</h1><span id="result-count" role="status"><?= count ?> icons</span></div><div class="icon-grid" aria-label="Icons"><?= tiles ?></div>
+<section id="empty" hidden><h2>No icons found</h2><p>Try another word or category.</p><button type="button" id="clear-search">Clear filters</button></section><p class="grid-note">Select an icon to copy or download its SVG.</p>
+<noscript><p>The customizer needs JavaScript. <a href="/assets/icons/sprite.svg" download>Download the full sprite</a>.</p></noscript></main>
+<dialog id="icon-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><h2 id="dialog-title"></h2><button type="button" id="close-dialog" class="icon-button" aria-label="Close icon details">×</button></div><div id="icon-preview"></div><div class="dialog-meta"><span id="dialog-variant"></span><span id="dialog-size"></span></div><div class="dialog-actions"><button type="button" id="copy-svg">Copy SVG</button><button type="button" id="download-svg">Download SVG</button></div><p id="copy-status" role="status"></p><details><summary>SVG source</summary><textarea id="svg-source" readonly aria-label="SVG source" spellcheck="false"></textarea></details></dialog>
+<?= templates ?>
+</body></html>

@@ -1,0 +1,143 @@
+<?js
+import { createHash, randomBytes } from 'node:crypto'
+import { HttpError, field } from 'cow:web'
+import config from './_config.cow'
+import db from './_db.cow'
+
+export const creationKey = () => randomBytes(24).toString('hex')
+export function number(value, name = 'id') {
+  if (!/^[1-9]\d{0,9}$/.test(String(value))) throw new HttpError(400, `Invalid ${name}.`)
+  return Number(value)
+}
+export const pageNumber = (value) => value === undefined ? 1 : number(value, 'page')
+export const date = (value) => new Date(value).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+
+function actor(userId, admin = false) {
+  const user = db.get('SELECT id, role FROM forum_users WHERE id = ?', [userId])
+  if (!user) throw new HttpError(403, 'Your account is no longer available.')
+  if (admin && user.role !== 'admin') throw new HttpError(403, 'Only the administrator can moderate posts.')
+  return user
+}
+
+export function topic(id) {
+  const row = db.get(`SELECT t.*, u.username FROM forum_topics t JOIN forum_users u ON u.id=t.user_id WHERE t.id=?`, [id])
+  if (!row) throw new HttpError(404, 'Topic not found.')
+  return row
+}
+
+export function post(id) {
+  const row = db.get(`SELECT p.*, t.title, t.locked, u.username FROM forum_posts p
+    JOIN forum_topics t ON t.id=p.topic_id JOIN forum_users u ON u.id=p.user_id WHERE p.id=?`, [id])
+  if (!row) throw new HttpError(404, 'Post not found.')
+  return row
+}
+
+export function editable(id, user) {
+  const row = post(id)
+  if (row.user_id !== user.id) throw new HttpError(403, 'You can only edit your own posts.')
+  if (row.removed_at !== null) throw new HttpError(410, 'This post has been removed.')
+  if (row.locked) throw new HttpError(409, 'This topic is locked. Posts cannot be edited.')
+  return row
+}
+
+export function topics(page) {
+  const count = db.get('SELECT count(*) AS n FROM forum_topics').n
+  const pages = Math.max(1, Math.ceil(count / config.pageSize))
+  if (page > pages) throw new HttpError(404, 'Page not found.')
+  const rows = db.all(`SELECT t.*, u.username,
+    (SELECT count(*) FROM forum_posts p WHERE p.topic_id=t.id) AS post_count
+    FROM forum_topics t JOIN forum_users u ON u.id=t.user_id
+    ORDER BY t.last_post_id DESC, t.id DESC LIMIT ? OFFSET ?`, [config.pageSize, (page - 1) * config.pageSize])
+  return { rows, count, pages }
+}
+
+export function posts(topicId, page) {
+  const count = db.get('SELECT count(*) AS n FROM forum_posts WHERE topic_id=?', [topicId]).n
+  const pages = Math.max(1, Math.ceil(count / config.pageSize))
+  if (page > pages) throw new HttpError(404, 'Page not found.')
+  const rows = db.all(`SELECT p.*, u.username, u.role FROM forum_posts p
+    JOIN forum_users u ON u.id=p.user_id WHERE p.topic_id=? ORDER BY p.id LIMIT ? OFFSET ?`, [topicId, config.pageSize, (page - 1) * config.pageSize])
+  return { rows, count, pages }
+}
+
+export function postLink(id) {
+  const row = post(id)
+  const count = db.get('SELECT count(*) AS n FROM forum_posts WHERE topic_id=? AND id<=?', [row.topic_id, id]).n
+  return `/topic?id=${row.topic_id}&page=${Math.ceil(count / config.pageSize)}#post-${id}`
+}
+
+function content(values, withTitle = false) {
+  const body = field(values, 'body').trim()
+  const title = withTitle ? field(values, 'title').trim() : ''
+  if (!body || body.length > 10_000) throw new HttpError(422, 'Write a post between 1 and 10,000 characters.')
+  if (withTitle && (!title || title.length > 120)) throw new HttpError(422, 'Use a topic title between 1 and 120 characters.')
+  return { body, title }
+}
+
+function receipt(values, userId, payload) {
+  const key = field(values, 'creationKey')
+  if (!/^[a-f0-9]{48}$/.test(key)) throw new HttpError(400, 'Invalid submission key. Reload the form.')
+  const fingerprint = createHash('sha256').update(JSON.stringify(payload)).digest('hex')
+  const previous = db.get('SELECT id, fingerprint FROM forum_posts WHERE user_id=? AND creation_key=?', [userId, key])
+  if (previous && previous.fingerprint !== fingerprint) throw new HttpError(409, 'This form was already submitted with different content. Open a new form.')
+  return { key, fingerprint, previous }
+}
+
+export async function createTopic(user, values) {
+  const { title, body } = content(values, true)
+  return db.transaction(() => {
+    actor(user.id)
+    const { key, fingerprint, previous } = receipt(values, user.id, ['topic', title, body])
+    if (previous) return previous.id
+    const now = Date.now()
+    const id = Number(db.run('INSERT INTO forum_topics(title, user_id, created_at) VALUES (?, ?, ?)', [title, user.id, now]).lastInsertRowid)
+    const postId = Number(db.run(`INSERT INTO forum_posts(topic_id, user_id, body, created_at, creation_key, fingerprint)
+      VALUES (?, ?, ?, ?, ?, ?)`, [id, user.id, body, now, key, fingerprint]).lastInsertRowid)
+    db.run('UPDATE forum_topics SET last_post_id=? WHERE id=?', [postId, id])
+    return postId
+  }, { mode: 'immediate' })
+}
+
+export async function reply(user, topicId, values) {
+  const { body } = content(values)
+  return db.transaction(() => {
+    actor(user.id)
+    if (topic(topicId).locked) throw new HttpError(409, 'This topic is locked. Your reply was not posted.')
+    const { key, fingerprint, previous } = receipt(values, user.id, ['reply', topicId, body])
+    if (previous) return previous.id
+    const id = Number(db.run(`INSERT INTO forum_posts(topic_id, user_id, body, created_at, creation_key, fingerprint)
+      VALUES (?, ?, ?, ?, ?, ?)`, [topicId, user.id, body, Date.now(), key, fingerprint]).lastInsertRowid)
+    db.run('UPDATE forum_topics SET last_post_id=? WHERE id=?', [id, topicId])
+    return id
+  }, { mode: 'immediate' })
+}
+
+export async function editPost(user, id, values) {
+  const { body } = content(values)
+  const version = number(field(values, 'version'), 'version')
+  await db.transaction(() => {
+    actor(user.id)
+    const row = editable(id, user)
+    if (row.version !== version) throw new HttpError(409, 'This post changed while you were editing. Your text is below; reload the saved post in another tab before trying again.')
+    db.run('UPDATE forum_posts SET body=?, edited_at=?, version=version+1 WHERE id=?', [body, Date.now(), id])
+  }, { mode: 'immediate' })
+}
+
+export async function moderate(user, action, id, values) {
+  const version = number(field(values, 'version'), 'version')
+  if (field(values, 'confirm') !== 'yes') throw new HttpError(422, 'Confirm this moderation action before continuing.')
+  return db.transaction(() => {
+    actor(user.id, true)
+    if (action === 'remove') {
+      const row = post(id)
+      if (row.version !== version || row.removed_at !== null) throw new HttpError(409, 'This post changed. Review it again before removing it.')
+      db.run("UPDATE forum_posts SET body='', removed_at=?, version=version+1 WHERE id=?", [Date.now(), id])
+      return row.topic_id
+    }
+    if (!['lock', 'unlock'].includes(action)) throw new HttpError(400, 'Unknown moderation action.')
+    const row = topic(id)
+    if (row.version !== version) throw new HttpError(409, 'This topic changed. Review its current state first.')
+    db.run('UPDATE forum_topics SET locked=?, version=version+1 WHERE id=?', [action === 'lock' ? 1 : 0, id])
+    return id
+  }, { mode: 'immediate' })
+}

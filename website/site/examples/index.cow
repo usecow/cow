@@ -1,0 +1,14 @@
+<?js
+import { securePage } from '../_headers.mjs'
+import { head, header, footer, icon } from '../_site.cow'
+import { examples } from '../_pages.cow'
+securePage(res)
+?>
+<!doctype html><html lang="en"><head><?= head('Examples — Cow', 'Cow examples: forms, databases, a news editor, and a forum.') ?></head><body><?= header('examples') ?>
+<main id="main" class="directory-page wrap"><header class="page-intro"><h1>Have a little Cow.</h1><p>Try a small example or explore a whole application.</p></header>
+<div class="directory-grid"><?js for (const page of examples) { ?><a class="directory-card" href="/examples/<?= h(page.slug) ?>"><h2><?= h(page.title) ?> <?= icon('arrow-line-up-right', 18) ?></h2><p><?= h(page.description) ?></p></a><?js } ?>
+<a class="directory-card" href="/docs/forms"><h2>Your first form <?= icon('arrow-line-up-right', 18) ?></h2><p>Read a name from a submitted form and greet the visitor.</p></a>
+<a class="directory-card" href="/docs/sqlite"><h2>Save it for later <?= icon('arrow-line-up-right', 18) ?></h2><p>Create a SQLite table and query your saved notes.</p></a>
+<a class="directory-card" href="/docs/responses"><h2>JSON & downloads <?= icon('arrow-line-up-right', 18) ?></h2><p>Send data from an endpoint or export it as a CSV file.</p></a>
+<a class="directory-card" href="/docs/modules"><h2>Shared modules <?= icon('arrow-line-up-right', 18) ?></h2><p>Import a function and reuse markup across your pages.</p></a>
+</div></main><?= footer() ?></body></html>

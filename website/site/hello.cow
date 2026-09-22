@@ -1,0 +1,16 @@
+<?js
+import { securePage } from './_headers.mjs'
+securePage(res)
+res.setHeader('cache-control', 'no-store')
+const name = String(req.get('name') || 'world').slice(0, 60)
+?>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hello from Cow</title>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body class="preview-document"><h1>Hello, <?= h(name) ?>!</h1></body>
+</html>

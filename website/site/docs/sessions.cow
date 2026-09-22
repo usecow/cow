@@ -1,0 +1,1 @@
+<?js await include('../_article.cow', { collection: 'docs', slug: 'sessions' }) ?>

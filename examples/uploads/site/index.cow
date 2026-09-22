@@ -1,0 +1,46 @@
+<?js
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { field, HttpError } from 'cow:web';
+
+res.setHeader('cache-control', 'no-store');
+let result;
+if (req.method() === 'POST') {
+  const values = await req.formData({ maxFiles: 1, maxFileSize: 262144, maxFields: 3, maxFieldSize: 200 });
+  const file = values.get('attachment');
+  if (values.getAll('attachment').length !== 1 || !file || typeof file === 'string') {
+    throw new HttpError(400, 'Choose one file.');
+  }
+  result = { label: field(values, 'label'), name: file.name, size: file.size, saved: false };
+  if (field(values, 'keep') === 'yes') {
+    // Private data, outside the served directory. Never use the client filename
+    // as a path, and never preserve a potentially executable extension.
+    const directory = resolve(__dirname, '../data');
+    await mkdir(directory, { recursive: true });
+    await file.save(resolve(directory, randomUUID() + '.bin'));
+    result.saved = true;
+  }
+} else if (!['GET', 'HEAD'].includes(req.method())) {
+  res.setHeader('allow', 'GET, HEAD, POST');
+  throw new HttpError(405, 'Use GET or POST.');
+}
+?>
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cow upload example</title>
+<h1>Upload a file</h1>
+<p>A local API example. Files stay in this request unless you choose to keep a private copy.</p>
+<?js if (result) { ?>
+<p>Received <?= h(result.name) ?> (<?= result.size ?> bytes). Label: <?= h(result.label) ?>.</p>
+<p><?= result.saved ? 'Saved a private copy outside the site directory.' : 'Not saved; the upload is discarded when this request ends.' ?></p>
+<?js } ?>
+<form method="post" enctype="multipart/form-data">
+  <p><label>Label <input name="label" maxlength="100"></label></p>
+  <p><label>File (up to 256 KiB) <input type="file" name="attachment" required></label></p>
+  <p><label><input type="checkbox" name="keep" value="yes"> Keep a private copy</label></p>
+  <button type="submit">Upload</button>
+</form>
+</html>

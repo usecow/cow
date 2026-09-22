@@ -1,0 +1,116 @@
+<?js
+import { readFile } from 'node:fs/promises'
+import { HttpError, field, form, hashPassword, secretMatches, session, verifyPassword } from 'cow:web'
+import config from './_config.cow'
+import db from './_db.cow'
+
+export const installed = () => Boolean(db.get("SELECT 1 FROM forum_users WHERE role = 'admin'"))
+
+export function methods(req, res, allowed = ['GET', 'HEAD', 'POST']) {
+  if (!allowed.includes(req.method())) {
+    res.setHeader('allow', allowed.join(', '))
+    throw new HttpError(405, 'This method is not allowed.')
+  }
+}
+
+export function headers(res) {
+  res.setHeader('content-security-policy', "default-src 'none'; style-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+  res.setHeader('x-content-type-options', 'nosniff')
+  res.setHeader('referrer-policy', 'same-origin')
+  res.setHeader('cache-control', 'no-store')
+}
+
+export const openSession = (req, res) => session(db, req, res, { name: 'jin_forum', secure: config.secureCookies })
+export const userFor = (current) => db.get('SELECT id, username, role FROM forum_users WHERE id = ?', [current.data.userId ?? -1])
+
+export async function context(req, res, { member = false, admin = false } = {}) {
+  headers(res)
+  if (!installed()) res.redirect('/install', 303)
+  const current = await openSession(req, res)
+  const user = userFor(current)
+  if ((member || admin) && !user) res.redirect('/login', 303)
+  if (admin && user.role !== 'admin') throw new HttpError(403, 'Only the administrator can moderate posts.')
+  return { current, user }
+}
+
+export function submitted(req, current) {
+  const values = form(req)
+  current.verify(values)
+  return values
+}
+
+export function displayError(res, error) {
+  if (!(error instanceof HttpError)) throw error
+  res.status(error.status)
+  return error.message
+}
+
+async function createAccount(mode, values) {
+  if (mode === 'install') {
+    if (installed()) throw new HttpError(409, 'Setup is complete. The installer is locked.')
+    let expected
+    try { expected = (await readFile(config.setupKey, 'utf8')).trim() }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      throw new HttpError(503, 'Run node setup.mjs in the project directory first.')
+    }
+    if (!expected || !secretMatches(field(values, 'setupKey'), expected)) throw new HttpError(403, 'The setup key is incorrect. Check the server terminal.')
+  } else if (!config.registrationOpen || !installed()) {
+    throw new HttpError(403, 'Registration is closed.')
+  }
+  const username = field(values, 'username').trim()
+  if (!/^[A-Za-z0-9_-]{3,32}$/.test(username)) throw new HttpError(422, 'Use 3–32 letters, numbers, underscores, or dashes for your username.')
+  const password = field(values, 'password')
+  if (password !== field(values, 'confirmPassword')) throw new HttpError(422, 'The passwords do not match.')
+  const encoded = await hashPassword(password)
+  await db.transaction(() => {
+    if (mode === 'install' && installed()) throw new HttpError(409, 'Setup is complete. The installer is locked.')
+    if (db.get('SELECT 1 FROM forum_users WHERE username = ?', [username])) throw new HttpError(409, 'That username is already in use.')
+    // The role is chosen by the server, never by a hidden field or cookie.
+    db.run('INSERT INTO forum_users(username, password_hash, role, created_at) VALUES (?, ?, ?, ?)',
+      [username, encoded, mode === 'install' ? 'admin' : 'member', Date.now()])
+  }, { mode: 'immediate' })
+}
+
+async function login(values, current) {
+  const username = field(values, 'username').trim()
+  const password = field(values, 'password')
+  if (username.length > 32 || password.length > 256) throw new HttpError(401, 'Incorrect username or password.')
+  const now = Date.now()
+  await db.transaction(() => {
+    db.run('DELETE FROM forum_login_attempts WHERE until_at <= ?', [now])
+    const entry = db.get('SELECT attempts FROM forum_login_attempts WHERE username = ?', [username.toLowerCase()])
+    if (entry?.attempts >= 5) throw new HttpError(429, 'Too many login attempts. Try again in 15 minutes.')
+    db.run(`INSERT INTO forum_login_attempts VALUES (?, 1, ?)
+      ON CONFLICT(username) DO UPDATE SET attempts = attempts + 1`, [username.toLowerCase(), now + 900_000])
+  }, { mode: 'immediate' })
+  const user = db.get('SELECT id, password_hash FROM forum_users WHERE username = ?', [username])
+  const valid = await verifyPassword(password, user?.password_hash)
+  if (!user || !valid) throw new HttpError(401, 'Incorrect username or password.')
+  await current.replace({ userId: user.id })
+  db.run('DELETE FROM forum_login_attempts WHERE username = ?', [username.toLowerCase()])
+}
+
+export async function accountPage(mode, req, res) {
+  headers(res)
+  methods(req, res)
+  if (mode !== 'install' && !installed()) res.redirect('/install', 303)
+  if (mode === 'install' && installed()) throw new HttpError(409, 'Setup is complete. The installer is locked.')
+  if (mode === 'register' && !config.registrationOpen) throw new HttpError(403, 'Registration is closed.')
+  const current = await openSession(req, res)
+  const user = userFor(current)
+  let error = '', username = ''
+  if (req.method() === 'POST') {
+    try {
+      const values = submitted(req, current)
+      username = field(values, 'username')
+      if (mode === 'login') {
+        await login(values, current)
+        res.redirect('/', 303)
+      }
+      await createAccount(mode, values)
+      res.redirect('/login?created=1', 303)
+    } catch (failure) { error = displayError(res, failure) }
+  }
+  return { mode, current, user, error, username }
+}

@@ -1,0 +1,13 @@
+{
+  "scopeName": "text.html.cow.jsp",
+  "patterns": [
+    {
+      "begin": "<\\?(?:js\\b|=)", "end": "\\?>",
+      "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.cow" } },
+      "endCaptures": { "0": { "name": "punctuation.section.embedded.end.cow" } },
+      "contentName": "meta.embedded.block.javascript",
+      "patterns": [{ "include": "source.js" }]
+    },
+    { "include": "text.html.basic" }
+  ]
+}

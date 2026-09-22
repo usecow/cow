@@ -1,0 +1,34 @@
+{
+  "name": "cow-language",
+  "displayName": "Cow Language",
+  "description": "Cow page syntax, snippets and page API suggestions, including JSP/TSP modes. No site execution or build step.",
+  "version": "0.0.1",
+  "publisher": "cow-local",
+  "license": "MIT",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Programming Languages", "Snippets"],
+  "main": "./extension.cjs",
+  "activationEvents": ["onLanguage:cow", "onLanguage:cow-jsp", "onLanguage:cow-tsp"],
+  "capabilities": { "untrustedWorkspaces": { "supported": true }, "virtualWorkspaces": true },
+  "contributes": {
+    "languages": [
+      { "id": "cow", "aliases": ["Cow"], "extensions": [".cow"], "configuration": "./language-configuration.json" },
+      { "id": "cow-jsp", "aliases": ["Cow JSP"], "extensions": [".jsp"], "configuration": "./language-configuration.json" },
+      { "id": "cow-tsp", "aliases": ["Cow TSP"], "extensions": [".tsp"], "configuration": "./language-configuration.json" }
+    ],
+    "grammars": [
+      { "language": "cow", "scopeName": "text.html.cow", "path": "./syntaxes/cow.json", "embeddedLanguages": { "meta.embedded.block.typescript": "typescript" } },
+      { "language": "cow-jsp", "scopeName": "text.html.cow.jsp", "path": "./syntaxes/jsp.json", "embeddedLanguages": { "meta.embedded.block.javascript": "javascript" } },
+      { "language": "cow-tsp", "scopeName": "text.html.cow.tsp", "path": "./syntaxes/tsp.json", "embeddedLanguages": { "meta.embedded.block.typescript": "typescript" } }
+    ],
+    "snippets": [
+      { "language": "cow", "path": "./snippets/cow.json" },
+      { "language": "cow", "path": "./snippets/shared.json" },
+      { "language": "cow-jsp", "path": "./snippets/jsp.json" },
+      { "language": "cow-tsp", "path": "./snippets/tsp.json" },
+      { "language": "cow-jsp", "path": "./snippets/shared.json" },
+      { "language": "cow-tsp", "path": "./snippets/shared.json" }
+    ],
+    "problemMatchers": [{ "name": "cow-check", "owner": "cow", "fileLocation": "absolute", "pattern": { "regexp": "^(.*):([0-9]+):([0-9]+): (.*)$", "file": 1, "line": 2, "column": 3, "message": 4 } }]
+  }
+}

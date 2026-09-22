@@ -1,0 +1,33 @@
+<?js
+import config from './_config.cow'
+const { title, user, current } = locals
+?>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= h(title) ?> · <?= h(config.title) ?></title>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">j.</span><?= h(config.title) ?></a>
+    <nav aria-label="Main navigation">
+      <a href="/">Discussions</a>
+      <?js if (user) { ?>
+        <span class="identity"><?= h(user.username) ?><?js if (user.role === 'admin') { ?> <span class="badge">Admin</span><?js } ?></span>
+        <form action="/logout" method="post" class="inline">
+          <input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>">
+          <button class="quiet" type="submit">Log out</button>
+        </form>
+      <?js } else { ?>
+        <a href="/login">Log in</a>
+        <?js if (config.registrationOpen) { ?><a href="/register">Join the forum</a><?js } ?>
+      <?js } ?>
+    </nav>
+  </div>
+</header>
+<main class="shell" id="main">

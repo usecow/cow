@@ -1,0 +1,25 @@
+/* Development tool. Loaded by font-picker.mjs only when the server runs with COW_SITE_FONTS=1. */
+
+/* The preview overrides the site's two font tokens. Code keeps its own font. */
+:root[data-font-preview] { --font-body: var(--preview-font), 'Funnel Sans', 'Trebuchet MS', sans-serif; }
+:root[data-heading-preview] { --font-heading: var(--preview-heading), Lexend, 'Trebuchet MS', sans-serif; }
+:root[data-font-size] body { zoom: var(--preview-size); }
+
+.font-picker { position: fixed; z-index: 1000; right: 16px; bottom: 16px; width: 248px; padding: 14px; border-radius: 12px; background: #1c1e15; color: #eef1e4; font: 13px/1.4 system-ui, sans-serif; box-shadow: 0 12px 34px -10px #00000073; }
+.font-picker[data-closed] { width: auto; padding: 0; background: none; box-shadow: none; }
+.font-picker[data-closed] .font-picker-body { display: none; }
+.font-picker-toggle { position: absolute; top: 10px; right: 10px; min-width: 34px; height: 28px; border: 0; border-radius: 7px; background: #8faf6a; color: #1a2211; font: 600 13px/1 system-ui, sans-serif; }
+.font-picker[data-closed] .font-picker-toggle { position: static; width: 46px; height: 40px; border-radius: 10px; box-shadow: 0 8px 22px -8px #00000080; }
+.font-picker-body { display: grid; gap: 11px; }
+.font-picker label { display: grid; gap: 5px; color: #c8d8ac; font-size: 12px; }
+.font-picker label:first-child { padding-right: 46px; }
+.font-picker label:first-child select { width: calc(100% + 46px); }
+.font-picker select { width: 100%; padding: 8px 9px; border: 1px solid #ffffff2b; border-radius: 7px; background: #2b3523; color: #fff; font: 14px system-ui, sans-serif; }
+.font-picker-step { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.font-picker-step button, .font-picker-reset { padding: 7px 8px; border: 1px solid #ffffff2b; border-radius: 7px; background: transparent; color: #eef1e4; font: 12px system-ui, sans-serif; }
+.font-picker-step button:hover, .font-picker-reset:hover { background: #ffffff14; }
+.font-picker .font-picker-check { display: flex; align-items: center; gap: 8px; color: #eef1e4; }
+.font-picker input[type=range] { width: 100%; accent-color: #8faf6a; }
+.font-picker output { justify-self: end; margin-top: -22px; color: #eef1e4; font-variant-numeric: tabular-nums; }
+.font-picker :focus-visible { outline: 2px solid #c8d8ac; outline-offset: 2px; }
+@media print { .font-picker { display: none; } }

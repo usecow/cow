@@ -1,0 +1,11 @@
+{
+  "name": "cow-example-info",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Cow runtime information page, like PHP's phpinfo",
+  "scripts": {
+    "start": "node ../../bin/cow.mjs site --host 127.0.0.1 --port 8004",
+    "test": "node --test test/*.test.mjs"
+  }
+}

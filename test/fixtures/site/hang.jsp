@@ -1,0 +1,2 @@
+<?js
+while (true) {}

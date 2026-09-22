@@ -1,0 +1,3 @@
+{
+  "Cow TypeScript block": { "prefix": "cowts", "body": ["<?ts", "$0", "?>"], "description": "Server-side TypeScript block" }
+}

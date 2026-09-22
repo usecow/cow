@@ -1,31 +1,134 @@
 {
-  "devDependencies": {
-    "@paralleldrive/cuid2": "^2.2.2",
-    "@types/convict": "^6.1.3",
-    "@types/ini": "^1.3.31",
-    "@types/node": "^20.6.0",
-    "cache-manager": "^5.2.3",
-    "commander": "^11.0.0",
-    "convict": "^6.2.4",
-    "cookie": "^0.5.0",
-    "cookie-signature": "^1.2.1",
-    "ini": "^4.1.1",
-    "on-headers": "^1.0.2",
-    "pino": "^8.15.0",
-    "pino-http": "^8.4.0",
-    "send": "^0.18.0",
-    "time-span": "^5.1.0",
-    "typescript": "^5.2.2"
+  "name": "@cowlang/cow",
+  "version": "0.0.1",
+  "description": "Cow, a web runtime for JavaScript and TypeScript pages, fresh on every request",
+  "homepage": "https://cowlang.com",
+  "type": "module",
+  "main": "./lib/app.mjs",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.mts",
+      "default": "./lib/app.mjs"
+    },
+    "./resource": {
+      "types": "./types/resource.d.mts",
+      "default": "./lib/resource.mjs"
+    },
+    "./sqlite": {
+      "types": "./types/sqlite.d.mts",
+      "default": "./lib/sqlite.mjs"
+    },
+    "./web": {
+      "types": "./types/web.d.mts",
+      "default": "./lib/web.mjs"
+    },
+    "./csv": {
+      "types": "./types/csv.d.mts",
+      "default": "./lib/csv.mjs"
+    },
+    "./highlight": {
+      "types": "./types/highlight.d.mts",
+      "default": "./lib/highlight.mjs"
+    },
+    "./runtime": {
+      "types": "./types/runtime.d.mts",
+      "default": "./lib/runtime-types.mjs"
+    }
   },
+  "cow": {
+    "native": [
+      "./lib/resource.mjs",
+      "./lib/sqlite.mjs",
+      "./lib/highlight.mjs"
+    ]
+  },
+  "files": [
+    "bin/",
+    "types/",
+    "editor/vscode/",
+    "lib/app.mjs",
+    "lib/host-runtime.mjs",
+    "lib/runtime-launcher.mjs",
+    "lib/compiler.mjs",
+    "lib/lexer.mjs",
+    "lib/highlight.mjs",
+    "lib/template-format.mjs",
+    "lib/check.mjs",
+    "lib/module-source.mjs",
+    "lib/compiler-worker.mjs",
+    "lib/source-map.mjs",
+    "lib/syntax.mjs",
+    "lib/dispatcher.mjs",
+    "lib/router.mjs",
+    "lib/resource.mjs",
+    "lib/sqlite.mjs",
+    "lib/web.mjs",
+    "lib/csv.mjs",
+    "lib/uploads.mjs",
+    "lib/runtime-worker.mjs",
+    "lib/runtime-types.mjs",
+    "lib/request-loader.mjs",
+    "lib/request-native.mjs",
+    "lib/request-metadata.mjs",
+    "lib/server.mjs",
+    "lib/site-errors.mjs",
+    "lib/file-output.mjs",
+    "lib/info.mjs",
+    "lib/http-policy.mjs",
+    "lib/worker-pool.mjs",
+    "examples/forum/site/",
+    "examples/forum/setup.mjs",
+    "examples/forum/README.md",
+    "examples/forum/data/.gitkeep",
+    "examples/uploads/site/",
+    "examples/uploads/README.md",
+    "examples/info/site/",
+    "examples/info/README.md",
+    "examples/mininews/site/news.cow",
+    "examples/mininews/README.md",
+    "LICENSE",
+    "readme.md",
+    "docs/README.md",
+    "docs/getting-started.md",
+    "docs/templates.md",
+    "docs/runtime-api.md",
+    "docs/request-lifecycle.md",
+    "docs/resources.md",
+    "docs/sqlite-sessions.md",
+    "docs/embedding.md",
+    "docs/operations.md",
+    "docs/runtimes.md",
+    "docs/import-compatibility.md",
+    "docs/language-contract.md",
+    "docs/standard-library.md",
+    "docs/authoring.md",
+    "docs/output-and-errors.md",
+    "docs/STYLEGUIDE.md",
+    "docs/compiler.md"
+  ],
   "bin": {
-    "jsp": "./cli.mjs"
+    "cow": "./bin/cow.mjs"
   },
-  "name": "jsp",
-  "version": "1.0.0",
-  "description": "Javascript Preprocessor - Hypertext meets Javascript",
-  "main": "cli.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test test/*.test.mjs",
+    "test:runtimes": "node test/runtime-matrix.mjs",
+    "test:bun": "node test/runtime-conformance.mjs bun",
+    "test:deno": "node test/runtime-conformance.mjs deno",
+    "bench:compiler": "node test/compiler-benchmark.mjs",
+    "test:package": "node --test --test-reporter=spec test/package-install.mjs"
+  },
+  "engines": {
+    "node": ">=22.16"
+  },
+  "dependencies": {
+    "acorn": "8.18.0",
+    "commander": "^11.0.0",
+    "import-meta-resolve": "4.2.0",
+    "typescript": "5.9.3",
+    "undici": "7.29.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.0"
   },
   "keywords": [
     "javascript",
@@ -36,5 +139,12 @@
     "php"
   ],
   "author": "Nijiko Yonskai <nijikokun@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usecow/cow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/usecow/cow/issues"
+  }
 }

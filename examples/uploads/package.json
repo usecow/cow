@@ -1,0 +1,11 @@
+{
+  "name": "cow-example-uploads",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Cow multipart upload example with private storage outside the served directory",
+  "scripts": {
+    "start": "node ../../bin/cow.mjs site",
+    "test": "node --test test/*.test.mjs"
+  }
+}

@@ -1,0 +1,9 @@
+<?js
+import { securePage } from './_headers.mjs'
+import { head, header, footer, icon } from './_site.cow'
+securePage(res)
+res.type('html')
+const missing = locals.error.status === 404
+?>
+<!doctype html><html lang="en"><head><?= head((missing ? 'Page not found' : 'Something went wrong') + ' — Cow', missing ? 'This page does not exist.' : 'The page could not be shown.') ?><meta name="robots" content="noindex"></head><body><?= header() ?>
+<main id="main" class="directory-page error-page wrap"><header class="page-intro"><h1><?= missing ? 'This page has wandered off.' : 'Something went wrong.' ?></h1><p><?= missing ? 'We could not find that address. It may have moved, or the link may be wrong.' : 'The page could not be shown. Please try again in a moment.' ?></p><a class="text-link" href="/">Head back home <?= icon('arrow-line-right', 20) ?></a></header></main><?= footer() ?></body></html>

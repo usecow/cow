@@ -1,0 +1,14 @@
+<?js
+import { securePage } from '../_headers.mjs'
+import { head, header, footer, icon } from '../_site.cow'
+import { docs } from '../_docs.cow'
+securePage(res)
+const query = String(req.get('q') || '').slice(0,100).trim()
+const searchable = item => (item.title + ' ' + item.description + ' ' + item.sections.map(section => section.title).join(' ')).toLowerCase()
+const found = docs.filter(item => searchable(item).includes(query.toLowerCase())).length
+?>
+<!doctype html><html lang="en"><head><?= head('Documentation — Cow', 'Learn Cow with guides and examples for pages, modules, forms, sessions, databases, and more.') ?></head><body><?= header('docs') ?>
+<main id="main" class="directory-page wrap"><header class="page-intro"><h1>Documentation</h1><p>Start with a page. Add what you need.</p></header>
+<form class="doc-search" method="get" action="/docs/"><label class="sr-only" for="docs-query">Search documentation</label><input id="docs-query" data-doc-search name="q" type="search" placeholder="Search the docs" value="<?= h(query) ?>"><button type="submit">Search</button></form>
+<p class="search-summary" id="search-summary" role="status"><?= query ? h(found + (found === 1 ? ' guide found.' : ' guides found.')) : '' ?></p>
+<div class="directory-grid"><?js for (const item of docs) { ?><a class="directory-card" data-doc-card data-search="<?= h(searchable(item)) ?>" href="/docs/<?= h(item.slug) ?>"<?= searchable(item).includes(query.toLowerCase()) ? '' : ' hidden' ?>><h2><?= h(item.title) ?> <?= icon('arrow-line-up-right', 18) ?></h2><p><?= h(item.description) ?></p></a><?js } ?></div></main><?= footer() ?></body></html>

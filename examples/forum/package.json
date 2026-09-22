@@ -1,0 +1,14 @@
+{
+  "name": "cow-example-forum",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Cow Commons: a small single-board forum made from ordinary Cow pages and SQLite",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "prestart": "node setup.mjs",
+    "start": "node ../../bin/cow.mjs site --port 8002 --workers 2",
+    "test": "node --test test/*.test.mjs",
+    "preview": "node test/preview.mjs"
+  }
+}

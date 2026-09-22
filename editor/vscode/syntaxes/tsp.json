@@ -1,0 +1,13 @@
+{
+  "scopeName": "text.html.cow.tsp",
+  "patterns": [
+    {
+      "begin": "<\\?(?:ts\\b|=)", "end": "\\?>",
+      "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.cow" } },
+      "endCaptures": { "0": { "name": "punctuation.section.embedded.end.cow" } },
+      "contentName": "meta.embedded.block.typescript",
+      "patterns": [{ "include": "source.ts" }]
+    },
+    { "include": "text.html.basic" }
+  ]
+}

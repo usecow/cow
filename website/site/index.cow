@@ -1,0 +1,1 @@
+<?js await include('./home-alt.cow', { home: true }) ?>

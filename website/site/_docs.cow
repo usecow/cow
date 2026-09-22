@@ -1,0 +1,1159 @@
+<?js
+export const docs = [
+  {
+    "slug": "get-started",
+    "title": "Get started",
+    "description": "Install Cow and make your first page.",
+    "sections": [
+      {
+        "id": "get-cow",
+        "title": "1. Install Node.js",
+        "blocks": [
+          {
+            "html": "In this guide, you write one page and open it in your browser. Cow is a web runtime that runs a directory of <code>.cow</code> files. A folder with one page in it is a complete site."
+          },
+          {
+            "html": "Install <a href=\"https://nodejs.org/en/download\">Node.js 22.16 or newer</a> with npm."
+          },
+          {
+            "html": "<strong>Note:</strong> The npm commands in this guide target published releases. Until the first publication, use <a href=\"#archive\">a local package archive</a>."
+          }
+        ]
+      },
+      {
+        "id": "first-page",
+        "title": "2. Make a page",
+        "blocks": [
+          {
+            "html": "Create a folder called <code>my-site</code> and save this as <code>my-site/index.cow</code>:"
+          },
+          {
+            "label": "my-site/index.cow",
+            "code": "<?js const name = req.get('name') || 'world' ?>\n<h1>Hello, <?= h(name) ?>!</h1>"
+          },
+          {
+            "html": "The code runs on the server. The HTML goes to the browser. <code>h()</code> escapes the name, so the browser treats it as text, not HTML."
+          }
+        ]
+      },
+      {
+        "id": "run",
+        "title": "3. Run it",
+        "blocks": [
+          {
+            "label": "Terminal — from the directory containing my-site",
+            "code": "npx @cowlang/cow my-site"
+          },
+          {
+            "html": "If npx asks to install the package, accept. <a href=\"https://docs.npmjs.com/cli/v11/commands/npx/\">npx</a> downloads Cow into its cache when needed. Add a <code>package.json</code> file only when you install third-party packages."
+          },
+          {
+            "html": "Open <a href=\"http://127.0.0.1:8000\">http://127.0.0.1:8000</a>. To say hello to someone else, add <code>?name=Clover</code> to the URL."
+          },
+          {
+            "label": "Output — http://127.0.0.1:8000/?name=Clover",
+            "code": "<h1>Hello, Clover!</h1>"
+          },
+          {
+            "html": "Edit the page and refresh. Ordinary page and helper changes take effect on the next request."
+          },
+          {
+            "html": "To stop the server, press Ctrl+C. To use another port, add <code>--port 8001</code>. With no directory argument, Cow serves the current directory."
+          },
+          {
+            "html": "<strong>Note:</strong> Use <code>@cowlang/cow</code>. The <code>npx cow</code> command runs an unrelated package."
+          },
+          {
+            "html": "Bundled helpers such as <code>cow:web</code> and <code>cow:sqlite</code> come from the running Cow installation. They work in plain directories too. Install third-party packages in your site as usual."
+          }
+        ]
+      },
+      {
+        "id": "check",
+        "title": "Check syntax and choose a runtime",
+        "blocks": [
+          {
+            "label": "Check a site without running it",
+            "code": "npx @cowlang/cow check my-site"
+          },
+          {
+            "label": "Output",
+            "code": "Checked 1 file: no syntax errors. Skipped 0 entries."
+          },
+          {
+            "html": "The syntax check is optional. It is not a build step, and it does not check TypeScript types or resolve imports."
+          },
+          {
+            "html": "Other guides write <code>cow ...</code> as shorthand. Replace it with <code>npx @cowlang/cow ...</code>, or use one of the installations below."
+          },
+          {
+            "html": "To run your site on another installed runtime, add <code>--runtime</code>. Stop the server before you switch runtimes."
+          },
+          {
+            "label": "Choose an installed runtime",
+            "code": "npx @cowlang/cow my-site --runtime bun"
+          },
+          {
+            "html": "Node.js starts the npm-installed launcher, which then selects your runtime. Install other runtimes separately. See <a href=\"/docs/runtimes\">Runtimes</a> for runtime support and limits."
+          }
+        ]
+      },
+      {
+        "id": "global",
+        "title": "Install a global command (optional)",
+        "blocks": [
+          {
+            "label": "Terminal",
+            "code": "npm install --global @cowlang/cow\ncow my-site"
+          },
+          {
+            "html": "This adds a machine-wide <code>cow</code> command, including its bundled helpers. Sites do not need their own Cow installation. Third-party dependencies remain local to each site."
+          }
+        ]
+      },
+      {
+        "id": "local",
+        "title": "Install Cow in your project (optional)",
+        "blocks": [
+          {
+            "html": "To pin the Cow version and make deployments reproducible, install Cow in your site:"
+          },
+          {
+            "label": "Terminal",
+            "code": "cd my-site\nnpm install --save-exact @cowlang/cow\nnpm exec --offline -- cow ."
+          },
+          {
+            "html": "The install creates <code>package.json</code> and <code>package-lock.json</code> if needed. Keep both in version control. Cow is a runtime dependency, not a development-only build tool. <code>npm exec --offline --</code> runs the local command without downloading a missing package."
+          },
+          {
+            "html": "A local install also supplies editor types and exports for standalone Node.js scripts or the embedding API. Cow’s bundled helper resolution applies inside its request loader, not to arbitrary runtime scripts or native adapter dependencies."
+          }
+        ]
+      },
+      {
+        "id": "archive",
+        "title": "Run from a local package",
+        "blocks": [
+          {
+            "html": "From a Cow source checkout, make an installable archive:"
+          },
+          {
+            "label": "Terminal — Cow repository",
+            "code": "npm ci\nnpm pack"
+          },
+          {
+            "html": "In the next command, use the actual archive path and the filename that npm printed. Replace <code>VERSION</code> to match. Quote paths that contain spaces."
+          },
+          {
+            "label": "Terminal — from the directory containing my-site",
+            "code": "npx --package /path/to/cowlang-cow-VERSION.tgz cow my-site"
+          },
+          {
+            "html": "You do not need a publishing account. npm may download public dependencies. For a project-local install, pass the archive to <code>npm install</code> instead. To run directly from the source checkout, use <code>npm ci</code> followed by <code>node bin/cow.mjs /path/to/site</code>."
+          }
+        ]
+      },
+      {
+        "id": "deploy",
+        "title": "Deploy a pinned installation",
+        "blocks": [
+          {
+            "html": "Use the project-local installation above. Copy your site, its <code>package.json</code>, and its <code>package-lock.json</code> to the server. Keep private data outside public assets. Then, from your <code>my-site</code> directory, run:"
+          },
+          {
+            "label": "Terminal",
+            "code": "npm ci --omit=dev\nnpm exec --offline -- cow check .\nnpm exec --offline -- cow . --host 127.0.0.1 --port 8000 --mode production"
+          },
+          {
+            "html": "For an application with a separate public directory, replace <code>.</code> in the Cow commands with <code>site</code>. Run Cow with a service manager behind an HTTPS reverse proxy."
+          },
+          {
+            "html": "<strong>Warning:</strong> The built-in server uses HTTP and does not trust forwarded headers. Restrict diagnostic routes, and explicitly configure Secure session cookies behind TLS termination."
+          },
+          {
+            "html": "To upgrade, choose a version, check the site, and restart Cow. Keep the previous lockfile and data backups so that you can roll back."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "language",
+      "routing",
+      "runtimes"
+    ]
+  },
+  {
+    "slug": "language",
+    "title": "Language",
+    "description": "Write JavaScript, TypeScript, and HTML in a Cow file.",
+    "sections": [
+      {
+        "id": "code",
+        "title": "Mix code and HTML",
+        "blocks": [
+          {
+            "html": "A <code>.cow</code> page is ordinary HTML with server-side code in it. This guide shows you how to write code tags, print values safely, add types, and import your own code."
+          },
+          {
+            "html": "Put code inside <code>&lt;?js … ?&gt;</code> or <code>&lt;?ts … ?&gt;</code>. Both tags in a Cow file accept optional TypeScript syntax. Cow sends everything outside a tag to the browser as written."
+          },
+          {
+            "label": "index.cow",
+            "code": "<?js\nconst things = ['A good idea', 'A little code', 'A cup of tea']\n?>\n<ul>\n  <?js for (const thing of things) { ?>\n    <li><?= h(thing) ?></li>\n  <?js } ?>\n</ul>"
+          },
+          {
+            "label": "Output, with blank lines removed",
+            "code": "<ul>\n    <li>A good idea</li>\n    <li>A little code</li>\n    <li>A cup of tea</li>\n</ul>"
+          },
+          {
+            "html": "<strong>Note:</strong> Coming from PHP? Cow keeps the line break after a closing <code>?&gt;</code>, where PHP removes it. That is why the raw output has blank lines. Browsers ignore them in HTML."
+          }
+        ]
+      },
+      {
+        "id": "output",
+        "title": "Print values",
+        "blocks": [
+          {
+            "html": "<code>&lt;?= expression ?&gt;</code> writes a value to the response."
+          },
+          {
+            "html": "<strong>Warning:</strong> <code>&lt;?= ?&gt;</code> does not escape HTML. For user-provided text inside HTML or quoted attributes, wrap the value in <code>h(value)</code>."
+          },
+          {
+            "label": "greeting.cow",
+            "code": "<h1>Hello, <?= h(req.get('name') || 'friend') ?>!</h1>"
+          },
+          {
+            "label": "Output — /greeting?name=<b>Clover</b>",
+            "code": "<h1>Hello, &lt;b&gt;Clover&lt;/b&gt;!</h1>"
+          },
+          {
+            "html": "HTML escaping is not URL validation or JavaScript escaping. Choose the right handling for the place you put the value."
+          }
+        ]
+      },
+      {
+        "id": "typescript",
+        "title": "Add types",
+        "blocks": [
+          {
+            "label": "greeting.cow",
+            "code": "<?ts\nconst name: string = req.get('name') || 'friend'\n?>\n<p>Nice to meet you, <?= h(name) ?>.</p>"
+          },
+          {
+            "html": "Cow removes type annotations before it runs the page. There is no separate build step and no full template type checker. All code blocks in one page share a scope."
+          }
+        ]
+      },
+      {
+        "id": "modules",
+        "title": "Import your own code",
+        "blocks": [
+          {
+            "html": "Use <code>import</code> for JavaScript, TypeScript, Cow modules, and supported packages. Keep exports in a reusable module rather than a rendered page. A final code block may leave off its closing <code>?&gt;</code> tag. See <a href=\"/docs/modules\">Modules &amp; includes</a> for a complete example."
+          },
+          {
+            "html": "Cow also accepts legacy <code>.jsp</code> and <code>.tsp</code> pages. Use <code>.cow</code> for new work."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "modules",
+      "reference",
+      "compatibility"
+    ]
+  },
+  {
+    "slug": "routing",
+    "title": "Pages & routing",
+    "description": "How files and folders become URLs.",
+    "sections": [
+      {
+        "id": "pages",
+        "title": "Pages and URLs",
+        "blocks": [
+          {
+            "html": "Cow turns the files and folders in your site into URLs. This guide shows you which files become pages, which files stay private, and where browser assets go."
+          },
+          {
+            "html": "<div class=\"table-scroll\"><table><thead><tr><th>File</th><th>URL</th></tr></thead><tbody><tr><td><code>index.cow</code></td><td><code>/</code></td></tr><tr><td><code>about.cow</code></td><td><code>/about</code></td></tr><tr><td><code>blog/index.cow</code></td><td><code>/blog/</code></td></tr></tbody></table></div>"
+          },
+          {
+            "html": "Public page URLs do not include the extension. You do not register a route for each file."
+          }
+        ]
+      },
+      {
+        "id": "private",
+        "title": "Keep files private",
+        "blocks": [
+          {
+            "html": "Names that begin with an underscore are private over HTTP. Use them for helpers, includes, and private directories. A request for a private file, such as <code>/_greetings</code>, gets a <code>404</code> response."
+          },
+          {
+            "label": "site/",
+            "code": "index.cow\nabout.cow\n_greetings.cow\n_partials/\n  header.cow\nassets/\n  site.css\n  site.js"
+          },
+          {
+            "html": "<strong>Warning:</strong> Importing a file does not, by itself, make its path private. Cow treats a helper without the underscore, such as <code>greetings.cow</code>, as a page, and visitors can request its URL."
+          },
+          {
+            "html": "Cow also does not serve dotfiles, <code>node_modules</code>, or ordinary server-side JavaScript and TypeScript modules as public files."
+          }
+        ]
+      },
+      {
+        "id": "assets",
+        "title": "Serve browser assets",
+        "blocks": [
+          {
+            "html": "Put browser JavaScript and public JSON inside <code>assets/</code>. CSS, images, and fonts can also live there."
+          },
+          {
+            "html": "<strong>Warning:</strong> Treat everything in <code>assets/</code> as intentionally public. Keep secrets, server modules, and databases elsewhere."
+          }
+        ]
+      },
+      {
+        "id": "request",
+        "title": "Use the request",
+        "blocks": [
+          {
+            "html": "To read a value from the query string, call <code>req.get(name)</code>. Save this as <code>hello.cow</code>:"
+          },
+          {
+            "label": "hello.cow",
+            "code": "<?js\nconst name = req.get('name') || 'world'\n?>\n<p>Hello, <?= h(name) ?>.</p>"
+          },
+          {
+            "label": "Output — /hello?name=Clover",
+            "code": "<p>Hello, Clover.</p>"
+          },
+          {
+            "html": "Query values come from the request URL. To handle a form submission, use the request method and the <a href=\"/docs/forms\">form APIs</a> rather than adding another route file."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "modules",
+      "forms",
+      "errors"
+    ]
+  },
+  {
+    "slug": "modules",
+    "title": "Modules & includes",
+    "description": "Reuse code and share markup between pages.",
+    "sections": [
+      {
+        "id": "export",
+        "title": "Share a function",
+        "blocks": [
+          {
+            "html": "Cow modules hold reusable code, and includes hold reusable markup. This guide shows you how to share a function between pages, render one file inside another, and pass page values to a helper."
+          },
+          {
+            "html": "Give a module named or default exports, then import them from a page or another module."
+          },
+          {
+            "label": "_greetings.cow",
+            "code": "<?ts\nexport function greet(name: string): string {\n  return 'Hello, ' + name + '!'\n}"
+          },
+          {
+            "label": "index.cow",
+            "code": "<?js\nimport { greet } from './_greetings.cow'\n?>\n<h1><?= h(greet('Clover')) ?></h1>"
+          },
+          {
+            "label": "Output — /",
+            "code": "<h1>Hello, Clover!</h1>"
+          },
+          {
+            "html": "<strong>Warning:</strong> The underscore keeps this helper private over HTTP. Importing a file does not make it private. Without the underscore, visitors can request the helper’s URL."
+          }
+        ]
+      },
+      {
+        "id": "imports",
+        "title": "What a module can contain",
+        "blocks": [
+          {
+            "html": "Imported Cow modules contain code tags, with optional whitespace around them. They support named and default exports, re-exports, and top-level <code>await</code>. HTML and echo blocks belong in rendered pages or includes."
+          }
+        ]
+      },
+      {
+        "id": "includes",
+        "title": "Reuse markup with an include",
+        "blocks": [
+          {
+            "label": "_welcome.cow",
+            "code": "<p>Hello, <?= h(locals.name) ?>!</p>"
+          },
+          {
+            "label": "index.cow",
+            "code": "<?js await include('./_welcome.cow', { name: 'Clover' }) ?>"
+          },
+          {
+            "label": "Output — /",
+            "code": "<p>Hello, Clover!</p>"
+          },
+          {
+            "html": "<code>include()</code> renders another file into the current response. Its input is available as <code>locals</code>. Await includes in order."
+          },
+          {
+            "html": "To choose between the two: imports return module exports, and includes produce output."
+          }
+        ]
+      },
+      {
+        "id": "context",
+        "title": "Pass page values to a helper",
+        "blocks": [
+          {
+            "label": "_account.cow",
+            "code": "<?js\nexport function requestedName(req) {\n  return req.get('name') || 'visitor'\n}"
+          },
+          {
+            "label": "account.cow",
+            "code": "<?js\nimport { requestedName } from './_account.cow'\n?>\n<p>Hello, <?= h(requestedName(req)) ?>.</p>"
+          },
+          {
+            "label": "Output — /account?name=Clover",
+            "code": "<p>Hello, Clover.</p>"
+          },
+          {
+            "html": "Page values such as <code>req</code>, <code>res</code>, and <code>cow</code> are not module globals. Pass them to a helper function when it needs them."
+          },
+          {
+            "html": "A module’s bindings are shared within a request. Saved sessions and database records persist separately."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "language",
+      "compatibility",
+      "sessions"
+    ]
+  },
+  {
+    "slug": "forms",
+    "title": "Forms & uploads",
+    "description": "Read form fields and uploaded files.",
+    "sections": [
+      {
+        "id": "fields",
+        "title": "Read a form",
+        "blocks": [
+          {
+            "html": "This guide shows you how to read form fields and uploaded files. The same page shows the form and handles the submission."
+          },
+          {
+            "label": "hello.cow",
+            "code": "<?js\nimport { field } from 'cow:web'\nlet name = ''\nif (req.method() === 'POST') {\n  const values = await req.formData()\n  name = field(values, 'name')\n}\n?>\n<form method=\"post\">\n  <label>Your name <input name=\"name\" maxlength=\"80\"></label>\n  <button>Say hello</button>\n</form>\n<?js if (name) { ?>\n  <p>Hello, <?= h(name) ?>!</p>\n<?js } ?>"
+          },
+          {
+            "label": "Output — after you submit the name Clover, with blank lines removed",
+            "code": "<form method=\"post\">\n  <label>Your name <input name=\"name\" maxlength=\"80\"></label>\n  <button>Say hello</button>\n</form>\n  <p>Hello, Clover!</p>"
+          },
+          {
+            "html": "<strong>Warning:</strong> This example only displays a greeting. Validate fields on the server. For actions that change account or application data, add authorization and CSRF protection."
+          }
+        ]
+      },
+      {
+        "id": "uploads",
+        "title": "Read an uploaded file",
+        "blocks": [
+          {
+            "html": "Use <code>method=\"post\"</code> and <code>enctype=\"multipart/form-data\"</code> on an HTML form with a file input. Read it with <code>await req.formData()</code>. A value is either a string or an upload with <code>name</code>, <code>type</code>, and <code>size</code>."
+          },
+          {
+            "label": "upload.cow",
+            "code": "<?js\nlet upload = null\nif (req.method() === 'POST') {\n  const values = await req.formData()\n  const file = values.get('attachment')\n  if (file && typeof file !== 'string') upload = file\n}\n?>\n<form method=\"post\" enctype=\"multipart/form-data\">\n  <label>File <input type=\"file\" name=\"attachment\"></label>\n  <button>Upload</button>\n</form>\n<?js if (upload) { ?>\n  <p>Received <?= h(upload.name) ?> (<?= upload.size ?> bytes).</p>\n<?js } ?>"
+          },
+          {
+            "label": "Output — after you upload a 12-byte notes.txt, with blank lines removed",
+            "code": "<form method=\"post\" enctype=\"multipart/form-data\">\n  <label>File <input type=\"file\" name=\"attachment\"></label>\n  <button>Upload</button>\n</form>\n  <p>Received notes.txt (12 bytes).</p>"
+          },
+          {
+            "html": "Uploads belong to the current request and are held in bounded memory. Saving is explicit: call <code>await file.save(absolutePath)</code> with a destination that you choose."
+          },
+          {
+            "html": "<strong>Warning:</strong> Do not trust an uploaded filename as a filesystem path. The name and type come from the visitor. Choose the destination yourself, and escape the name with <code>h()</code> when you print it."
+          }
+        ]
+      },
+      {
+        "id": "limits",
+        "title": "Set limits",
+        "blocks": [
+          {
+            "html": "Cow applies request body and upload limits. By default, the whole request body can be up to 1,048,576 bytes (1 MiB), and <code>req.formData()</code> accepts up to 10 files of up to 1,048,576 bytes each. Cow rejects a form that exceeds the <code>formData()</code> limits in full, with a <code>413</code> response and the code <code>COW_FORM_LIMIT</code>."
+          },
+          {
+            "html": "Check your configured limits before you accept large files. To raise the body limit, start Cow with <code>--body-limit</code>. To change the form limits, pass options such as <code>maxFiles</code> and <code>maxFileSize</code> to <code>req.formData()</code>."
+          },
+          {
+            "html": "Validate content as well as names and types. An interrupted save can leave a partial file, so application code should handle that case."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "sessions",
+      "reference",
+      "responses"
+    ]
+  },
+  {
+    "slug": "sessions",
+    "title": "Cookies & sessions",
+    "description": "Store preferences and manage signed-in sessions.",
+    "sections": [
+      {
+        "id": "session",
+        "title": "Open a session",
+        "blocks": [
+          {
+            "html": "This guide shows you how to open a session, save a change to it, hash passwords, and set cookies."
+          },
+          {
+            "html": "Cow’s session helper stores session data in SQLite. Create a private <code>data</code> directory next to your <code>site</code> directory, then open the database and session:"
+          },
+          {
+            "label": "account.cow",
+            "code": "<?js\nimport { sqlite } from 'cow:sqlite'\nimport { session } from 'cow:web'\n\nconst db = await sqlite(__dirname + '/../data/site.sqlite')\nconst visitor = await session(db, req, res)\n?>\n<p>Hello, <?= h(visitor.data.name || 'friend') ?>.</p>"
+          },
+          {
+            "label": "Output — /account, on a first visit",
+            "code": "<p>Hello, friend.</p>"
+          },
+          {
+            "html": "Open or change the session before the page writes response output, so that Cow can send the session’s cookie headers."
+          },
+          {
+            "html": "<strong>Warning:</strong> Use HTTPS for real logins."
+          }
+        ]
+      },
+      {
+        "id": "save",
+        "title": "Save a change explicitly",
+        "blocks": [
+          {
+            "html": "Include the session’s CSRF token in the form, in a field named <code>csrf</code>:"
+          },
+          {
+            "label": "Form field",
+            "code": "<input type=\"hidden\" name=\"csrf\" value=\"<?= h(visitor.csrfToken) ?>\">"
+          },
+          {
+            "label": "Session update",
+            "code": "const values = await req.formData()\nvisitor.verify(values)\nvisitor.update({ ...visitor.data, name: 'Clover' })"
+          },
+          {
+            "html": "<code>verify()</code> checks submitted values. If the token does not match, the request ends with a <code>403</code> response."
+          },
+          {
+            "html": "<code>update()</code> saves an explicit snapshot. It does not silently save every mutation to <code>visitor.data</code>. Concurrent changes can report a conflict, with status <code>409</code> and the code <code>COW_SESSION_CONFLICT</code>."
+          }
+        ]
+      },
+      {
+        "id": "passwords",
+        "title": "Hash passwords",
+        "blocks": [
+          {
+            "html": "Use the password helpers when you build authentication."
+          },
+          {
+            "html": "<strong>Warning:</strong> Store the returned hash, never the original password."
+          },
+          {
+            "label": "Password helpers",
+            "code": "import { hashPassword, verifyPassword } from 'cow:web'\n\nconst encoded = await hashPassword(password)\nconst matches = await verifyPassword(candidate, encoded)"
+          },
+          {
+            "html": "These helpers are pieces for building authentication, not a complete login service. The example applications also show authorization, session changes, and form protection."
+          }
+        ]
+      },
+      {
+        "id": "cookies",
+        "title": "Set and read cookies",
+        "blocks": [
+          {
+            "label": "Cookie helpers",
+            "code": "import { cookies, setCookie } from 'cow:web'\n\nconst theme = cookies(req).theme || 'light'\nsetCookie(res, 'theme', 'light', { path: '/', sameSite: 'Lax' })"
+          },
+          {
+            "html": "Cookie options include path, lifetime, secure, and HttpOnly."
+          },
+          {
+            "html": "<strong>Warning:</strong> Set secure cookies deliberately when you host behind a proxy. Cow does not automatically trust forwarded headers."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "sqlite",
+      "forms",
+      "reference"
+    ]
+  },
+  {
+    "slug": "sqlite",
+    "title": "SQLite",
+    "description": "Open a database, run queries, and save data.",
+    "sections": [
+      {
+        "id": "database",
+        "title": "Open a database",
+        "blocks": [
+          {
+            "html": "This guide shows you how to open a SQLite database from a page, run queries with bound parameters, and group changes in a transaction."
+          },
+          {
+            "html": "Create a <code>data</code> directory beside your served <code>site</code> folder. Keep application data outside public assets."
+          },
+          {
+            "label": "notes.cow",
+            "code": "<?js\nimport { sqlite } from 'cow:sqlite'\nconst db = await sqlite(__dirname + '/../data/site.sqlite')\n\ndb.exec('CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, title TEXT)')\nconst notes = db.all('SELECT id, title FROM notes ORDER BY id DESC')\n?>\n<ul>\n  <?js for (const note of notes) { ?>\n    <li><?= h(note.title) ?></li>\n  <?js } ?>\n</ul>"
+          },
+          {
+            "html": "The list is empty until you add a note in the next section."
+          }
+        ]
+      },
+      {
+        "id": "queries",
+        "title": "Pass values as parameters",
+        "blocks": [
+          {
+            "label": "Parameterized queries",
+            "code": "db.run('INSERT INTO notes (title) VALUES (?)', ['A little idea'])\nconst note = db.get('SELECT * FROM notes WHERE id = ?', [1])"
+          },
+          {
+            "label": "Output — /notes, after the first insert, with blank lines removed",
+            "code": "<ul>\n    <li>A little idea</li>\n</ul>"
+          },
+          {
+            "html": "<strong>Warning:</strong> Use parameters for values instead of inserting user text into SQL strings. Protect write actions with the authorization and form checks that your application needs."
+          }
+        ]
+      },
+      {
+        "id": "transactions",
+        "title": "Group changes in a transaction",
+        "blocks": [
+          {
+            "label": "A transaction",
+            "code": "await db.transaction(database => {\n  database.run('INSERT INTO notes (title) VALUES (?)', ['First idea'])\n  database.run('INSERT INTO notes (title) VALUES (?)', ['Another idea'])\n})"
+          },
+          {
+            "html": "The callback can be asynchronous. Failed transactions roll back. Request cleanup also releases managed transaction state. Database records are not reset between requests."
+          }
+        ]
+      },
+      {
+        "id": "methods",
+        "title": "Everyday methods",
+        "blocks": [
+          {
+            "html": "<ul><li><code>all(sql, parameters)</code> returns rows.</li><li><code>get(sql, parameters)</code> returns a row or <code>undefined</code>.</li><li><code>run(sql, parameters)</code> returns change and inserted-ID information, for example <code>{ lastInsertRowid: 1, changes: 1 }</code>.</li><li><code>exec(sql)</code> executes SQL without bound parameters.</li></ul>"
+          },
+          {
+            "html": "SQLite is the bundled database adapter. Other database engines need a compatible adapter."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "sessions",
+      "responses",
+      "reference"
+    ]
+  },
+  {
+    "slug": "responses",
+    "title": "Responses & files",
+    "description": "Send HTML, JSON, downloads, and streams.",
+    "sections": [
+      {
+        "id": "json",
+        "title": "Return JSON",
+        "blocks": [
+          {
+            "html": "A page sends HTML by default. This guide shows you how to send JSON, redirects, downloads, CSV, and streams instead."
+          },
+          {
+            "label": "status.cow",
+            "code": "<?js\nres.json({ message: 'All good in the pasture.' })"
+          },
+          {
+            "label": "Output — /status",
+            "code": "{\"message\":\"All good in the pasture.\"}"
+          },
+          {
+            "html": "When you pass a value to <code>res.json()</code>, Cow sends JSON and finishes the response. Calling it without a value only selects the JSON content type."
+          }
+        ]
+      },
+      {
+        "id": "redirect",
+        "title": "Redirect a visitor",
+        "blocks": [
+          {
+            "label": "Redirect",
+            "code": "res.redirect('/thanks')"
+          },
+          {
+            "html": "Without a status argument, the response is a <code>302</code> redirect with a <code>location</code> header."
+          },
+          {
+            "html": "Set status and headers before response output is committed. Methods that finish the response should be the last response operation in that path."
+          }
+        ]
+      },
+      {
+        "id": "files",
+        "title": "Offer a download",
+        "blocks": [
+          {
+            "label": "download.cow",
+            "code": "<?js\n// Check the visitor is allowed to access this file first.\nres.type('application/pdf')\nawait res.download(__dirname + '/../data/report.pdf', 'report.pdf')"
+          },
+          {
+            "html": "<strong>Warning:</strong> Use an authorized, server-chosen absolute path."
+          },
+          {
+            "html": "<code>res.sendFile()</code> sends a file without an attachment name. You must await both operations."
+          }
+        ]
+      },
+      {
+        "id": "csv",
+        "title": "Export CSV",
+        "blocks": [
+          {
+            "label": "export.cow",
+            "code": "<?js\nimport { stringifyCsv } from 'cow:csv'\nres.type('text/csv; charset=utf-8')\nres.send(stringifyCsv([\n  ['name', 'message'],\n  ['Clover', 'Hello, herd!']\n]))"
+          },
+          {
+            "label": "Output — /export",
+            "code": "name,message\nClover,\"Hello, herd!\""
+          },
+          {
+            "html": "CSV helpers read and write text."
+          },
+          {
+            "html": "<strong>Warning:</strong> CSV quoting does not neutralize spreadsheet formulas in untrusted cells. Handle that separately when you export to spreadsheets."
+          }
+        ]
+      },
+      {
+        "id": "streams",
+        "title": "Stream a response",
+        "blocks": [
+          {
+            "label": "stream.cow",
+            "code": "<?js\nres.type('text/plain; charset=utf-8')\nasync function* lines() {\n  yield 'Hello, herd!\\n'\n  yield 'That is all for now.\\n'\n}\nawait res.stream(lines())"
+          },
+          {
+            "html": "Streams stay within the request lifetime. A failure after output begins closes the response. Cow cannot replace bytes that it already sent with an error page."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "forms",
+      "errors",
+      "reference"
+    ]
+  },
+  {
+    "slug": "runtimes",
+    "title": "Runtimes",
+    "description": "Run Cow with Node.js, Bun, Nub, or Deno.",
+    "sections": [
+      {
+        "id": "choose",
+        "title": "Choose a runtime",
+        "blocks": [
+          {
+            "html": "Cow runs on the JavaScript runtime that you choose: Node.js, Bun, Nub, or Deno. This guide shows you how to choose a runtime and what differs between them."
+          },
+          {
+            "html": "After <a href=\"/docs/get-started\">installing Cow</a>, use the command below. Replace <code>cow</code> with <code>npx @cowlang/cow</code>. For a project-local installation, prefix it with <code>npm exec --offline --</code> instead."
+          },
+          {
+            "label": "Terminal",
+            "code": "cow site --runtime node\ncow site --runtime bun\ncow site --runtime nub\ncow site --runtime deno"
+          },
+          {
+            "html": "Install your chosen runtime separately. The flag changes the runtime, not your page syntax. Stop the server before you switch. Cow uses the same installed dependencies and SQLite database format."
+          }
+        ]
+      },
+      {
+        "id": "support",
+        "title": "Supported runtimes",
+        "blocks": [
+          {
+            "html": "<div class=\"table-scroll\"><table><thead><tr><th>Runtime</th><th>Minimum</th><th>Status</th></tr></thead><tbody><tr><td>Node.js</td><td>22.16</td><td>Baseline runtime</td></tr><tr><td>Bun</td><td>1.4.2</td><td>Supported with runtime-specific limits</td></tr><tr><td>Nub</td><td>0.9.2 + Node.js 22.16</td><td>Node.js launcher</td></tr><tr><td>Deno</td><td>2.9.6</td><td>Supported with runtime-specific limits</td></tr></tbody></table></div>"
+          },
+          {
+            "html": "The recorded runtime checks cover Windows. This is not a promise that every operating system or later runtime version behaves identically."
+          },
+          {
+            "html": "<strong>Note:</strong> Windows is the supported platform. Other platforms have no compatibility guarantee. Runtime support does not imply identical native APIs or resource guarantees."
+          }
+        ]
+      },
+      {
+        "id": "differences",
+        "title": "Differences between runtimes",
+        "blocks": [
+          {
+            "html": "<ul><li>Per-worker heap limits are enforced on Node.js and Nub, not on Bun and Deno. An explicit <code>--memory-limit</code> fails on Bun and Deno.</li><li>Bun has a documented exception for server-wide <code>OPTIONS *</code> and an extra diagnostic for some failed top-level-await imports.</li><li>Nub launches Cow through its Node.js compatibility mode.</li></ul>"
+          },
+          {
+            "html": "<strong>Warning:</strong> Cow launches Deno with full host permissions. This is not a sandbox for untrusted Cow sites."
+          }
+        ]
+      },
+      {
+        "id": "portable",
+        "title": "Keep your files portable",
+        "blocks": [
+          {
+            "html": "Use Cow APIs and supported packages for shared application code. Runtime-specific imports such as <code>bun:*</code> or <code>jsr:*</code> are not portable Cow APIs. Native adapters must support the selected runtime."
+          }
+        ]
+      },
+      {
+        "id": "defaults",
+        "title": "Set a default runtime",
+        "blocks": [
+          {
+            "html": "<code>COW_RUNTIME</code> sets the default runtime. The command flag wins over it. <code>COW_NODE</code>, <code>COW_BUN</code>, <code>COW_NUB</code>, and <code>COW_DENO</code> can point to specific executables. Cow does not download runtimes itself."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "get-started",
+      "compatibility"
+    ]
+  },
+  {
+    "slug": "compatibility",
+    "title": "Compatibility",
+    "description": "Supported module formats, packages, and APIs.",
+    "sections": [
+      {
+        "id": "languages",
+        "title": "JavaScript and TypeScript",
+        "blocks": [
+          {
+            "html": "Use this page to check which languages, module formats, packages, and APIs you can rely on in a Cow site."
+          },
+          {
+            "html": "Cow pages and helpers accept JavaScript with optional TypeScript syntax. Cow removes types before it runs the code. Parsing uses TypeScript 5.9.3. Neither execution nor <code>cow check</code> performs full type checking."
+          }
+        ]
+      },
+      {
+        "id": "packages",
+        "title": "npm packages and modules",
+        "blocks": [
+          {
+            "html": "Cow resolves installed packages through <code>node_modules</code>, including package exports and supported aliases. Ordinary packages run within the request’s module environment."
+          },
+          {
+            "html": "<div class=\"table-scroll\"><table><thead><tr><th>Format</th><th>Behavior</th></tr></thead><tbody><tr><td><code>.cow</code></td><td>Code-only imports with optional types and exports.</td></tr><tr><td><code>.mjs</code>, <code>.ts</code></td><td>ES modules. TypeScript is transpiled.</td></tr><tr><td><code>.js</code></td><td>ESM or CommonJS, based on the nearest package.json.</td></tr><tr><td><code>.cjs</code></td><td>CommonJS with request-local module state.</td></tr><tr><td><code>.json</code></td><td>A request-owned default export.</td></tr></tbody></table></div>"
+          },
+          {
+            "html": "<strong>Note:</strong> Package loading support does not mean that every package works. Dependencies that need blocked process-level APIs or persistent state may need a native adapter."
+          }
+        ]
+      },
+      {
+        "id": "apis",
+        "title": "Web and Node.js APIs",
+        "blocks": [
+          {
+            "html": "Supported functionality includes <code>fetch</code>, URL tools, text encoding, Web Crypto, and selected request-safe Node.js file, path, and crypto APIs. Availability in the runtime alone does not make an API available inside a Cow request."
+          }
+        ]
+      },
+      {
+        "id": "limits",
+        "title": "What is not promised",
+        "blocks": [
+          {
+            "html": "<ul><li>Full Node.js API compatibility or every npm package.</li><li>Raw server, worker, process, watcher, or socket access from ordinary page code.</li><li>Remote HTTP module imports, custom loaders, or TypeScript path remapping.</li><li>A hostile-code sandbox.</li><li>JSX/React or CGI/FastCGI integration as a built-in feature.</li></ul>"
+          },
+          {
+            "html": "<strong>Warning:</strong> Cow is not a sandbox for hostile code. Run only sites that you trust."
+          }
+        ]
+      },
+      {
+        "id": "state",
+        "title": "Shared code and saved data",
+        "blocks": [
+          {
+            "html": "Imports share their evaluated module within a request. A later request gets new ordinary module state. Sessions, database records, and explicitly saved files persist. Native adapters can keep managed connections alive."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "modules",
+      "runtimes",
+      "reference"
+    ]
+  },
+  {
+    "slug": "errors",
+    "title": "Errors & debugging",
+    "description": "Check your code and handle errors.",
+    "sections": [
+      {
+        "id": "check",
+        "title": "Check syntax",
+        "blocks": [
+          {
+            "html": "This guide shows you how to check a site for syntax errors, make your own error page, and find error details."
+          },
+          {
+            "label": "Terminal",
+            "code": "cow check site\ncow check site --json"
+          },
+          {
+            "html": "<code>cow check</code> checks pages and helpers without starting a server or executing application code. For each syntax error, it prints the file path, line, column, message, and the code <code>COW_SYNTAX</code>, and it exits with status 1."
+          },
+          {
+            "html": "A successful check does not guarantee that imports resolve or that values are valid at runtime."
+          }
+        ]
+      },
+      {
+        "id": "page",
+        "title": "Make an error page",
+        "blocks": [
+          {
+            "html": "Put <code>_error.cow</code> in your site root. It receives details through <code>locals.error</code>."
+          },
+          {
+            "label": "_error.cow",
+            "code": "<?js res.type('html') ?>\n<h1><?= locals.error.status === 404 ? 'Lost in the pasture?' : 'Something went wrong.' ?></h1>\n<p><a href=\"/\">Let’s head home.</a></p>"
+          },
+          {
+            "label": "Output — a URL with no page, status 404",
+            "code": "<h1>Lost in the pasture?</h1>\n<p><a href=\"/\">Let’s head home.</a></p>"
+          },
+          {
+            "html": "Cow keeps the original HTTP status."
+          },
+          {
+            "html": "<strong>Warning:</strong> Do not display private error messages, causes, or stacks to visitors. Custom error pages receive diagnostics even in production."
+          }
+        ]
+      },
+      {
+        "id": "debug",
+        "title": "Find error details",
+        "blocks": [
+          {
+            "html": "Development errors map back to original Cow and imported TypeScript locations. Production fallback pages hide the details. Infrastructure failures use the server fallback. Once streaming starts, errors cannot replace the response."
+          }
+        ]
+      },
+      {
+        "id": "info",
+        "title": "See what Cow is running",
+        "blocks": [
+          {
+            "html": "<code>cow.info()</code> provides HTML or JSON diagnostics for versions, settings, and capabilities."
+          },
+          {
+            "html": "<strong>Warning:</strong> Put diagnostic pages behind your own access control rather than exposing operations information unnecessarily."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "reference",
+      "runtimes"
+    ]
+  },
+  {
+    "slug": "editor",
+    "title": "Editor support",
+    "description": "Syntax highlighting, snippets, and API types.",
+    "sections": [
+      {
+        "id": "vscode",
+        "title": "VS Code",
+        "blocks": [
+          {
+            "html": "This guide shows you how to get syntax highlighting, snippets, and API types for Cow files in your editor."
+          },
+          {
+            "html": "The npm package includes an optional local extension at <code>node_modules/@cowlang/cow/editor/vscode/</code>. It provides highlighting, snippets, and basic page API suggestions for Cow files. Follow its included README for local setup."
+          },
+          {
+            "html": "<strong>Note:</strong> Installing Cow does not install the extension in VS Code."
+          }
+        ]
+      },
+      {
+        "id": "types",
+        "title": "Types for Cow APIs",
+        "blocks": [
+          {
+            "label": "Typed helper",
+            "code": "<?ts\nimport type { CowRequest } from 'cow:runtime'\n\nexport function nameFrom(req: CowRequest): string {\n  return req.get('name') || 'friend'\n}"
+          },
+          {
+            "html": "Declarations are included for the runtime, web, SQLite, resource, and CSV APIs. A type import describes a value. It does not create page globals in a helper."
+          }
+        ]
+      },
+      {
+        "id": "scope",
+        "title": "What the tools check",
+        "blocks": [
+          {
+            "html": "Cow’s editor support is not a full template language server. Standalone TypeScript does not parse tagged Cow files. <code>cow check</code> checks syntax, not types or import resolution."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "language",
+      "modules",
+      "reference"
+    ]
+  },
+  {
+    "slug": "reference",
+    "title": "API reference",
+    "description": "Core request, response, and page APIs.",
+    "sections": [
+      {
+        "id": "req-get",
+        "title": "req.get(name)",
+        "blocks": [
+          {
+            "html": "Reads the first query-string value with this name. <strong>Parameter:</strong> a string key. <strong>Returns:</strong> a string or <code>undefined</code>. To read all matching values, call <code>req.getAll(name)</code>."
+          },
+          {
+            "label": "Example",
+            "code": "const name = req.get('name') || 'world'"
+          }
+        ]
+      },
+      {
+        "id": "req-form",
+        "title": "req.formData(options?)",
+        "blocks": [
+          {
+            "html": "Reads URL-encoded or multipart form data. <strong>Returns:</strong> a promise of form values, including request-owned uploads. The request body and upload limits apply."
+          },
+          {
+            "label": "Example",
+            "code": "const values = await req.formData()"
+          }
+        ]
+      },
+      {
+        "id": "h",
+        "title": "h(value)",
+        "blocks": [
+          {
+            "html": "Escapes a value for HTML text or a quoted attribute. <strong>Parameter:</strong> the value to display. <strong>Returns:</strong> an escaped string."
+          },
+          {
+            "label": "Example",
+            "code": "<p><?= h(req.get('name') || 'world') ?></p>"
+          },
+          {
+            "label": "Output — ?name=<b>Clover</b>",
+            "code": "<p>&lt;b&gt;Clover&lt;/b&gt;</p>"
+          },
+          {
+            "html": "<strong>Note:</strong> <code>h()</code> is not an escaping helper for JavaScript, CSS, or arbitrary URLs."
+          }
+        ]
+      },
+      {
+        "id": "include",
+        "title": "include(path, locals?)",
+        "blocks": [
+          {
+            "html": "Renders a local file into the current response. <strong>Parameters:</strong> a path relative to the calling file, and an optional input object. <strong>Returns:</strong> a promise. Await it. Inputs are available as <code>locals</code> in the included file. Includes share request context and can nest up to 32 levels deep."
+          },
+          {
+            "label": "Example",
+            "code": "await include('./_welcome.cow', { name: 'Clover' })"
+          }
+        ]
+      },
+      {
+        "id": "res-json",
+        "title": "res.json(value?)",
+        "blocks": [
+          {
+            "html": "With a value, sends a JSON response and finishes it. With no argument, selects the JSON content type without finishing. Set other response metadata before output is committed."
+          },
+          {
+            "label": "Example",
+            "code": "res.json({ hello: 'herd' })"
+          },
+          {
+            "label": "Output",
+            "code": "{\"hello\":\"herd\"}"
+          }
+        ]
+      },
+      {
+        "id": "res-status",
+        "title": "res.status(code)",
+        "blocks": [
+          {
+            "html": "Sets the HTTP response status before headers are committed. <strong>Parameter:</strong> a valid status code. You can chain it with a response method."
+          },
+          {
+            "label": "Example",
+            "code": "res.status(404).send('Not found')"
+          }
+        ]
+      },
+      {
+        "id": "more",
+        "title": "More page APIs",
+        "blocks": [
+          {
+            "html": "<div class=\"table-scroll\"><table><thead><tr><th>API</th><th>Purpose</th></tr></thead><tbody><tr><td><code>req.method()</code></td><td>Read the HTTP method.</td></tr><tr><td><code>req.header(name)</code></td><td>Read a request header.</td></tr><tr><td><code>req.json()</code></td><td>Read the request body as JSON.</td></tr><tr><td><code>echo(...values)</code></td><td>Append response output.</td></tr><tr><td><code>res.setHeader(name, value)</code></td><td>Set an outgoing header.</td></tr><tr><td><code>res.redirect(location, status?)</code></td><td>Finish with a redirect.</td></tr><tr><td><code>cow.signal</code></td><td>Observe request cancellation.</td></tr><tr><td><code>cow.onCleanup(callback)</code></td><td>Register request cleanup.</td></tr><tr><td><code>cow.track(promise)</code></td><td>Track asynchronous work within the request.</td></tr></tbody></table></div>"
+          },
+          {
+            "html": "See the guides for sessions, SQLite, uploads, streaming, and their detailed behavior. This reference covers core page APIs. Version-zero APIs can change."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "forms",
+      "sessions",
+      "sqlite",
+      "responses"
+    ]
+  }
+]

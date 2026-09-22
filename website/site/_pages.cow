@@ -1,0 +1,285 @@
+<?js
+export const comparisons = [
+  {
+    "slug": "express",
+    "title": "Cow vs Express",
+    "description": "A page file or a route handler: two ways to build a server-rendered site.",
+    "sections": [
+      {
+        "id": "approach",
+        "title": "Where the code lives",
+        "blocks": [
+          {
+            "html": "In Cow, the file is the route. Put <code>index.cow</code> in your site directory to serve <code>/</code>. JavaScript and HTML can live together, with shared logic in imported modules."
+          },
+          {
+            "label": "site/index.cow",
+            "code": "<?js\nconst name = 'herd'\n?>\n<h1>Hello, <?= h(name) ?>!</h1>"
+          },
+          {
+            "html": "Express registers routes in application code. This example sends HTML from a route handler. See the <a href=\"https://expressjs.com/en/starter/hello-world/\">Express introduction</a> for its setup instructions."
+          },
+          {
+            "label": "index.mjs",
+            "code": "import express from 'express'\n\nconst app = express()\napp.get('/', (req, res) => {\n  res.send('<h1>Hello, herd!</h1>')\n})\napp.listen(3000)"
+          }
+        ]
+      },
+      {
+        "id": "choose",
+        "title": "Which fits your project?",
+        "blocks": [
+          {
+            "html": "Try Cow if you want file-based pages, HTML next to server code, and a server you start with <code>cow site</code>. Cow includes helpers for forms, sessions, and SQLite."
+          },
+          {
+            "html": "Choose Express when you want to define routes in code or your application depends on Express middleware. Cow does not run Express middleware as page handlers."
+          },
+          {
+            "html": "Cow is in early development. Check its <a href=\"/docs/compatibility\">package compatibility</a> before choosing it for an existing application."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "get-started",
+      "routing",
+      "compatibility"
+    ]
+  },
+  {
+    "slug": "hono",
+    "title": "Cow vs Hono",
+    "description": "Cow starts with page files. Hono starts with an application and its routes.",
+    "sections": [
+      {
+        "id": "approach",
+        "title": "The same greeting",
+        "blocks": [
+          {
+            "html": "A Cow page can contain JavaScript, TypeScript, and HTML. Its path within the site directory determines its URL."
+          },
+          {
+            "label": "site/index.cow",
+            "code": "<?js\nconst name = 'herd'\n?>\n<h1>Hello, <?= h(name) ?>!</h1>"
+          },
+          {
+            "html": "Hono defines routes on an application. It has starters for different runtimes and deployment platforms. The entry point depends on where you run it. See the <a href=\"https://hono.dev/docs/getting-started/basic\">Hono getting-started guide</a>."
+          },
+          {
+            "label": "Hono application",
+            "code": "import { Hono } from 'hono'\n\nconst app = new Hono()\napp.get('/', c => c.html('<h1>Hello, herd!</h1>'))\n\nexport default app"
+          }
+        ]
+      },
+      {
+        "id": "choose",
+        "title": "Choose the shape of your app",
+        "blocks": [
+          {
+            "html": "Cow suits a site organized around files and folders, with server-rendered HTML, forms, and shared modules."
+          },
+          {
+            "html": "Hono suits an application organized around explicit route handlers, particularly when you need one of its platform starters. Cow runs on Node.js, Bun, Deno, or Nub. That does not make it compatible with those deployment platforms."
+          },
+          {
+            "html": "Cow can return JSON and stream responses too. The difference is how you organize and run the application, not whether it can serve an API."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "routing",
+      "responses",
+      "runtimes"
+    ]
+  },
+  {
+    "slug": "php",
+    "title": "Coming from PHP",
+    "description": "Server-side code alongside HTML, with JavaScript and TypeScript syntax.",
+    "sections": [
+      {
+        "id": "familiar",
+        "title": "This might feel familiar",
+        "blocks": [
+          {
+            "html": "PHP can embed server-side code in HTML. Cow uses a similar approach, but the code inside a Cow page is JavaScript or TypeScript. See the <a href=\"https://www.php.net/intro\">PHP introduction</a> for PHP’s model."
+          },
+          {
+            "label": "PHP",
+            "code": "<?php $name = 'herd'; ?>\n<h1>Hello, <?= htmlspecialchars($name) ?>!</h1>"
+          },
+          {
+            "label": "Cow",
+            "code": "<?js const name = 'herd' ?>\n<h1>Hello, <?= h(name) ?>!</h1>"
+          },
+          {
+            "html": "Both examples produce HTML for the browser. In Cow, <code>h()</code> escapes text for HTML output. It is not a universal escape function for JavaScript, CSS, or URLs."
+          }
+        ]
+      },
+      {
+        "id": "same",
+        "title": "What stays the same",
+        "blocks": [
+          {
+            "html": "<ul><li>The file is the URL. <code>about.cow</code> answers <code>/about</code>.</li><li>Every request starts fresh. A variable that you set in one request is gone in the next, as in PHP.</li><li><code>&lt;?= ?&gt;</code> prints a value without escaping it. Wrap visitor input in <code>h()</code>, where PHP uses <code>htmlspecialchars()</code>.</li><li><code>null</code> prints nothing. <code>&lt;?= title; ?&gt;</code> works with the trailing semicolon.</li><li>A <code>//</code> comment ends at <code>?&gt;</code>. The final <code>?&gt;</code> in a file is optional.</li><li>Edit a page, refresh the browser, and see the change. No build step.</li></ul>"
+          }
+        ]
+      },
+      {
+        "id": "cheatsheet",
+        "title": "PHP to Cow",
+        "blocks": [
+          {
+            "html": "Find the PHP that you know on the left. The Cow equivalent is on the right."
+          },
+          {
+            "html": "<div class=\"table-scroll\"><table><thead><tr><th>In PHP</th><th>In Cow</th><th>Guide</th></tr></thead><tbody><tr><td><code>&lt;?php ... ?&gt;</code></td><td><code>&lt;?js ... ?&gt;</code> or <code>&lt;?ts ... ?&gt;</code></td><td><a href=\"/docs/language\">Language</a></td></tr><tr><td><code>htmlspecialchars($name)</code></td><td><code>h(name)</code></td><td><a href=\"/docs/language\">Language</a></td></tr><tr><td><code>$_GET['name']</code></td><td><code>req.get('name')</code></td><td><a href=\"/docs/reference\">API reference</a></td></tr><tr><td><code>$_POST</code> and <code>$_FILES</code></td><td><code>await req.formData()</code></td><td><a href=\"/docs/forms\">Forms &amp; uploads</a></td></tr><tr><td><code>$_SERVER['REQUEST_METHOD']</code></td><td><code>req.method()</code></td><td><a href=\"/docs/reference\">API reference</a></td></tr><tr><td><code>include 'header.php';</code></td><td><code>await include('./_header.cow', { title })</code></td><td><a href=\"/docs/modules\">Modules &amp; includes</a></td></tr><tr><td><code>require 'functions.php';</code></td><td><code>import { greet } from './_functions.cow'</code></td><td><a href=\"/docs/modules\">Modules &amp; includes</a></td></tr><tr><td><code>header('Location: /thanks');</code></td><td><code>res.redirect('/thanks')</code></td><td><a href=\"/docs/responses\">Responses &amp; files</a></td></tr><tr><td><code>http_response_code(404);</code></td><td><code>res.status(404)</code></td><td><a href=\"/docs/reference\">API reference</a></td></tr><tr><td><code>echo json_encode($data);</code></td><td><code>res.json(data)</code></td><td><a href=\"/docs/responses\">Responses &amp; files</a></td></tr><tr><td><code>session_start();</code> and <code>$_SESSION</code></td><td><code>await session(db, req, res)</code>, then <code>visitor.data</code></td><td><a href=\"/docs/sessions\">Cookies &amp; sessions</a></td></tr><tr><td><code>setcookie()</code> and <code>$_COOKIE</code></td><td><code>setCookie(res, ...)</code> and <code>cookies(req)</code></td><td><a href=\"/docs/sessions\">Cookies &amp; sessions</a></td></tr><tr><td><code>password_hash()</code> and <code>password_verify()</code></td><td><code>hashPassword()</code> and <code>verifyPassword()</code></td><td><a href=\"/docs/sessions\">Cookies &amp; sessions</a></td></tr><tr><td>PDO with prepared statements</td><td><code>db.all(sql, [values])</code> from <code>cow:sqlite</code></td><td><a href=\"/docs/sqlite\">SQLite</a></td></tr><tr><td><code>phpinfo();</code></td><td><code>cow.info()</code></td><td><a href=\"/docs/errors\">Errors &amp; debugging</a></td></tr><tr><td><code>php -S 127.0.0.1:8000</code></td><td><code>cow site</code></td><td><a href=\"/docs/get-started\">Get started</a></td></tr><tr><td><code>php -l page.php</code></td><td><code>cow check site</code></td><td><a href=\"/docs/errors\">Errors &amp; debugging</a></td></tr></tbody></table></div>"
+          }
+        ]
+      },
+      {
+        "id": "different",
+        "title": "What changes",
+        "blocks": [
+          {
+            "html": "Use <code>const</code>, <code>let</code>, JavaScript objects, <code>async</code>/<code>await</code>, and JavaScript imports. Use <code>&lt;?ts</code> when you want TypeScript syntax."
+          },
+          {
+            "html": "Cow supplies its own request, response, session, and database APIs. It does not run PHP code or PHP packages. npm support is subject to Cow’s <a href=\"/docs/compatibility\">compatibility limits</a>."
+          },
+          {
+            "html": "Serve a directory with <code>cow site</code>. Cow provides the web server and maps page files to URLs."
+          },
+          {
+            "html": "A few differences can surprise you:<ul><li>An include does not see the variables of the page that calls it. Pass values as the second argument, and read them from <code>locals</code>. <code>include()</code> is asynchronous, so <code>await</code> it.</li><li>There are no superglobals. Pages receive <code>req</code>, <code>res</code>, and <code>cow</code>. To use them in an imported helper, pass them as arguments.</li><li>Cow keeps the line break after a closing <code>?&gt;</code>, where PHP removes it. Browsers ignore the extra blank line in HTML.</li><li><code>echo('a', 'b')</code> joins its values with a space. PHP's <code>echo 'a', 'b';</code> does not.</li><li>To keep a file private, start its name with an underscore, such as <code>_db.cow</code>. Cow never serves it, so you do not need a folder outside the web root.</li></ul>"
+          }
+        ]
+      }
+    ],
+    "related": [
+      "language",
+      "forms",
+      "modules",
+      "get-started"
+    ]
+  }
+]
+
+export const examples = [
+  {
+    "slug": "mininews",
+    "title": "MiniNews",
+    "description": "A news editor in one Cow file, with sign-in, drafts, and publishing.",
+    "sections": [
+      {
+        "id": "run",
+        "title": "Run it locally",
+        "blocks": [
+          {
+            "html": "<a href=\"/docs/get-started\">Install Cow locally</a> in your project. Copy <code>node_modules/@cowlang/cow/examples/mininews/site/news.cow</code> into your own <code>site/</code> directory. Keep the editable page and its database outside <code>node_modules</code>."
+          },
+          {
+            "label": "Terminal — project root",
+            "code": "npm exec --offline -- cow site --port 8001"
+          },
+          {
+            "html": "Visit <code>http://127.0.0.1:8001/news</code>. On the first visit, MiniNews creates a private setup-key file beside the page. Read <code>site/_news.setup-key</code> and enter it to create your editor account."
+          }
+        ]
+      },
+      {
+        "id": "use",
+        "title": "Write and publish",
+        "blocks": [
+          {
+            "html": "Create a story, preview it, and save it as a draft or publish it. The dashboard shows recent stories and publication counts. Titles, short stories, and full stories can be edited later."
+          },
+          {
+            "html": "The page also works as an include, so you can show published stories elsewhere on your site:"
+          },
+          {
+            "label": "Include a news feed",
+            "code": "<?js await include('./news.cow', {\n  mode: 'feed',\n  url: '/news',\n  limit: 5\n}) ?>"
+          }
+        ]
+      },
+      {
+        "id": "source",
+        "title": "Read the source",
+        "blocks": [
+          {
+            "html": "Open your copied <code>site/news.cow</code>. It contains the routes, database queries, forms, and markup. The README in <code>node_modules/@cowlang/cow/examples/mininews/</code> covers setup, backups, and embedding."
+          },
+          {
+            "html": "MiniNews stores its database beside the page, under a private underscore-prefixed name. Keep that database when updating the page. Use HTTPS before accepting real logins."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "forms",
+      "sessions",
+      "sqlite",
+      "modules"
+    ]
+  },
+  {
+    "slug": "forum",
+    "title": "Cow Commons",
+    "description": "A forum with accounts, discussions, replies, and moderation.",
+    "sections": [
+      {
+        "id": "run",
+        "title": "Run it locally",
+        "blocks": [
+          {
+            "html": "<a href=\"/docs/get-started\">Install Cow locally</a> in a project with an empty <code>site/</code> directory. Copy the contents of <code>node_modules/@cowlang/cow/examples/forum/site/</code> into it, and copy <code>node_modules/@cowlang/cow/examples/forum/setup.mjs</code> into the project root."
+          },
+          {
+            "label": "Terminal — project root",
+            "code": "node setup.mjs\nnpm exec --offline -- cow site --port 8002 --workers 2"
+          },
+          {
+            "html": "Visit <code>http://127.0.0.1:8002/install</code>. Use the private key printed by setup to create an administrator. There are no default credentials. Setup creates <code>data/</code> beside <code>site/</code>. Keep it outside the served directory."
+          }
+        ]
+      },
+      {
+        "id": "use",
+        "title": "Start a discussion",
+        "blocks": [
+          {
+            "html": "Members can register, start topics, reply, and edit their own posts. Administrators can lock topics and remove posts. Readers can browse without an account."
+          },
+          {
+            "html": "Forms work without client-side JavaScript. Sessions and forum data are stored in SQLite, outside the served directory."
+          }
+        ]
+      },
+      {
+        "id": "source",
+        "title": "Read the source",
+        "blocks": [
+          {
+            "html": "Edit your copied <code>site/</code> files. Shared modules handle authentication, database access, and forum queries. Includes supply the header, footer, and pagination. Do not edit the package inside <code>node_modules</code>."
+          },
+          {
+            "html": "Every page and shared include in this example uses the <code>.cow</code> extension. Legacy <code>.jsp</code> and <code>.tsp</code> pages remain supported."
+          },
+          {
+            "html": "Treat this as a working example, not a production-ready forum distribution. Read <code>node_modules/@cowlang/cow/examples/forum/README.md</code> for setup, security, and concurrency limits."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "modules",
+      "forms",
+      "sessions",
+      "sqlite"
+    ]
+  }
+]

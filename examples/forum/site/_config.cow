@@ -1,0 +1,9 @@
+<?js
+export default Object.freeze({
+  title: 'Cow Commons',
+  database: new URL('../data/forum.sqlite', import.meta.url),
+  setupKey: new URL('../data/setup-key', import.meta.url),
+  secureCookies: (process.env.COW_FORUM_SECURE_COOKIES ?? process.env.JIN_FORUM_SECURE_COOKIES) === '1',
+  registrationOpen: true,
+  pageSize: 10
+})

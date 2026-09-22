@@ -1,0 +1,547 @@
+<?js
+// MiniNews: copy this .cow page into a site and visit /news.
+// Renaming it is supported. Generated _<name>.sqlite and _<name>.setup-key
+// files are private data, not additional source files. See ../README.md.
+import { basename, extname, join } from 'node:path'
+import { readFile, writeFile } from 'node:fs/promises'
+import { createHash, randomBytes } from 'node:crypto'
+import { sqlite } from 'cow:sqlite'
+import { HttpError, field, form, hashPassword, secretMatches, session, verifyPassword } from 'cow:web'
+
+const siteTitle = 'MiniNews'
+const filename = basename(__filename)
+const stem = basename(__filename, extname(__filename))
+const databasePath = join(__dirname, '_' + stem + '.sqlite')
+const setupPath = join(__dirname, '_' + stem + '.setup-key')
+const embedded = locals.mode === 'feed'
+const base = embedded ? locals.url : new URL(req.url(), 'http://cow.local').pathname
+if (typeof base !== 'string' || !base.startsWith('/') || base.startsWith('//') || /[\\?#\x00-\x20\x7f]/.test(base)) {
+  throw new HttpError(500, 'The news URL must be an absolute site path, such as /news.')
+}
+const link = (values = {}) => base + (Object.keys(values).length ? '?' + new URLSearchParams(values) : '')
+const number = (value, fallback = 0) => {
+  if (value === undefined || value === '') return fallback
+  if (!/^[1-9][0-9]{0,8}$/.test(value)) throw new HttpError(400, 'Invalid item or page number.')
+  return Number(value)
+}
+const date = value => new Date(value).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
+
+// Deliberately small Markdown subset, not CommonMark. HTML is always escaped.
+// No images, HTML blocks, autolinks or plugins; links have a scheme allowlist.
+function safeLink(value) {
+  if (/[\x00-\x20\x7f\\]/.test(value)) return false
+  if (/^(?:\/(?!\/)|#|\.\.?\/)/.test(value)) return true
+  try { return ['https:', 'http:', 'mailto:'].includes(new URL(value).protocol) } catch { return false }
+}
+function inline(text, depth = 0) {
+  if (depth > 4) return h(text)
+  const token = /`([^`\n]+)`|\[([^\]\n]+)\]\(([^)\s]+)\)|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*/g
+  let result = '', offset = 0
+  for (const match of text.matchAll(token)) {
+    result += h(text.slice(offset, match.index))
+    if (match[1] !== undefined) result += '<code>' + h(match[1]) + '</code>'
+    else if (match[2] !== undefined) result += safeLink(match[3])
+      ? '<a href="' + h(match[3]) + '" rel="nofollow noopener noreferrer">' + h(match[2]) + '</a>' : h(match[2])
+    else if (match[4] !== undefined) result += '<strong>' + inline(match[4], depth + 1) + '</strong>'
+    else result += '<em>' + inline(match[5], depth + 1) + '</em>'
+    offset = match.index + match[0].length
+  }
+  return result + h(text.slice(offset))
+}
+function markdown(source, depth = 0) {
+  if (depth > 4) return '<p>' + h(source) + '</p>'
+  const lines = String(source).replace(/\r\n?/g, '\n').split('\n')
+  const startsBlock = line => /^(?:```|#{1,6} |>|[-*+] |[0-9]+\. )/.test(line)
+  let output = '', i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (!line.trim()) { i++; continue }
+    if (line.startsWith('```')) {
+      const code = []; i++
+      while (i < lines.length && !lines[i].startsWith('```')) code.push(lines[i++])
+      if (i < lines.length) i++
+      output += '<pre><code>' + h(code.join('\n')) + '</code></pre>'; continue
+    }
+    const heading = /^(#{1,6}) (.+)$/.exec(line)
+    if (heading) { output += '<h' + heading[1].length + '>' + inline(heading[2]) + '</h' + heading[1].length + '>'; i++; continue }
+    if (/^>/.test(line)) {
+      const quote = []
+      while (i < lines.length && /^>/.test(lines[i])) quote.push(lines[i++].replace(/^> ?/, ''))
+      output += '<blockquote>' + markdown(quote.join('\n'), depth + 1) + '</blockquote>'; continue
+    }
+    const ordered = /^[0-9]+\. /.test(line), unordered = /^[-*+] /.test(line)
+    if (ordered || unordered) {
+      const tag = ordered ? 'ol' : 'ul', pattern = ordered ? /^[0-9]+\. / : /^[-*+] /
+      output += '<' + tag + '>'
+      while (i < lines.length && pattern.test(lines[i])) output += '<li>' + inline(lines[i++].replace(pattern, '')) + '</li>'
+      output += '</' + tag + '>'; continue
+    }
+    const paragraph = [lines[i++]]
+    while (i < lines.length && lines[i].trim() && !startsBlock(lines[i])) paragraph.push(lines[i++])
+    output += '<p>' + inline(paragraph.join('\n')).replace(/\n/g, '<br>') + '</p>'
+  }
+  return output
+}
+function article(post, full = false) {
+  const text = full ? post.body : (post.summary || (post.body.length > 400 ? post.body.slice(0, 400) + '…' : post.body))
+  return '<article class="cow-news-item"><h2><a href="' + h(link({id: String(post.id)})) + '">' + h(post.title) + '</a></h2>' +
+    '<p class="meta">' + h(post.published_at ? date(post.published_at) : 'Draft') + '</p>' +
+    '<div class="news-text">' + markdown(text) + '</div>' +
+    (full ? '' : '<p><a href="' + h(link({id: String(post.id)})) + '">Read more</a></p>') + '</article>'
+}
+
+const db = await sqlite(databasePath)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS mn_account(id INTEGER PRIMARY KEY CHECK(id=1), username TEXT NOT NULL, password_hash TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS mn_posts(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, summary TEXT NOT NULL,
+    body TEXT NOT NULL, published_at INTEGER, updated_at INTEGER NOT NULL, version INTEGER NOT NULL DEFAULT 1, creation_key TEXT NOT NULL UNIQUE);
+  CREATE INDEX IF NOT EXISTS mn_published ON mn_posts(published_at DESC,id DESC);
+  CREATE TABLE IF NOT EXISTS mn_attempts(id INTEGER PRIMARY KEY CHECK(id=1), attempts INTEGER NOT NULL, until_at INTEGER NOT NULL);
+`)
+const account = db.get('SELECT * FROM mn_account WHERE id=1')
+let view = embedded ? 'feed' : (req.get('view') || 'news')
+let current, error = '', username = '', preview = false, entry, entries = [], page = 1, pages = 1, query = '', totals
+let setupKey = '', creationKey = randomBytes(16).toString('hex')
+const blank = () => ({id: 0, version: 0, title: '', summary: '', body: '', state: 'draft'})
+const fromRow = row => ({...row, state: row.published_at === null ? 'draft' : 'published'})
+const css = `
+/* Nordic identity; HIG informs hierarchy, feedback and access, not an Apple skin. */
+:root {
+  color-scheme: light dark;
+  --page:#eef0e9; --paper:#fdfdf9; --wash:#f2f4ed; --ink:#293c35; --muted:#606b63;
+  --line:#d9ded6; --control:#7b877d; --accent:#365d4b; --soft:#e8eee4;
+  --primary:#365d4b; --primary-pressed:#284937; --focus:#365d4b;
+  --positive:#24633b; --positive-bg:#e8f3eb; --draft:#765400; --draft-bg:#fbf2d7;
+  --danger:#b42318; --danger-hover:#8c190f; --danger-bg:#fff0ef;
+}
+@media(prefers-color-scheme:dark) {
+  :root {
+    --page:#1b211e; --paper:#242c27; --wash:#2c352e; --ink:#efefe5; --muted:#b7bfb3;
+    --line:#455046; --control:#879586; --accent:#b1cdb8; --soft:#37483b;
+    --primary:#3e6650; --primary-pressed:#32533f; --focus:#b1cdb8;
+    --positive:#9be2af; --positive-bg:#1f3a2a; --draft:#ffe096; --draft-bg:#41351e;
+    --danger:#ffb4ab; --danger-hover:#ffd0ca; --danger-bg:#462924;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;scroll-padding-block:20px}
+body{margin:24px 16px;background:var(--page);color:var(--ink);font:.875rem/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:880px;margin:auto;background:var(--paper);border:1px solid var(--line)}
+[hidden]{display:none!important}
+a{color:var(--accent);text-underline-offset:3px}
+a:hover{text-decoration:underline}
+h1,h2,h3{text-wrap:balance}
+h2{font:400 1.75rem/1.25 Georgia,"Times New Roman",serif;margin:0 0 8px}
+h3{font-size:.9375rem;font-weight:600;margin:0}
+p{margin:8px 0;text-wrap:pretty}
+:where(a,button,input,textarea,select,summary,[tabindex]):focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.skip-link{position:fixed;top:8px;left:16px;z-index:10;transform:translateY(-200%);padding:12px 16px;border:1px solid var(--control);background:var(--paper)}
+.skip-link:focus{transform:none}
+.masthead{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.monogram{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;background:var(--primary);color:#fff;font:italic 1.875rem/1 Georgia,"Times New Roman",serif}
+.brand h1{font-size:1.125rem;letter-spacing:-.02em;font-weight:650;margin:0}
+.brand p,.edition{margin:2px 0 0;font-size:.8125rem;color:var(--muted)}
+.edition{text-align:right;font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.8125rem;font-weight:500;color:var(--muted);margin:0 0 6px}
+.tabs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:0 16px;background:var(--wash);border-block:1px solid var(--line)}
+.tabs a,.tabs button{display:flex;align-items:center;min-height:44px;padding:10px 12px;text-decoration:none;font-size:.8125rem;color:var(--ink);border:0;border-bottom:2px solid transparent;border-radius:0;background:none;white-space:nowrap;box-shadow:none}
+.tabs a[aria-current=page]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tabs a:hover,.tabs button:hover{background:var(--soft)}
+.tabs a:active,.tabs button:active{background:var(--soft);box-shadow:inset 0 0 0 1px var(--control)}
+.tabs form{margin:0;display:flex}
+.tabs .site-link{margin-left:auto;color:var(--accent)}
+.content{padding:24px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 22px}
+.section-head>div{min-width:0}
+.section-head p{color:var(--muted);margin:6px 0 0}
+.section-head .eyebrow{margin:0 0 6px}
+.section-label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:24px 0 12px}
+.section-label a{font-size:.8125rem;min-height:44px;display:inline-flex;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid var(--line);margin:20px 0}
+.stats div{padding:16px 20px}
+.stats div+div{border-left:1px solid var(--line)}
+.stats dt{font-size:.8125rem;color:var(--muted);overflow-wrap:anywhere}
+.stats dd{font:400 1.875rem/1.2 Georgia,"Times New Roman",serif;font-variant-numeric:tabular-nums;margin:6px 0 0}
+.shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--wash);border-block:1px solid var(--line)}
+.shortcuts a{padding:16px;text-decoration:none}
+.shortcuts a+a{border-left:1px solid var(--line)}
+.shortcuts a:hover{background:var(--soft)}
+.shortcuts a:active{background:var(--soft)}
+.shortcuts strong{display:block;font-weight:600}
+.shortcuts span{display:block;color:var(--muted);font-size:.8125rem;margin-top:6px}
+form{margin:0}
+label{display:block;font-weight:600;margin:16px 0 7px}
+input,textarea,select,button{font:inherit;border-radius:2px}
+input[type=text],input[type=password],textarea,select{border:1px solid var(--control);color:var(--ink);background:var(--paper);padding:10px 12px;min-height:44px;max-width:100%}
+input[type=text],input[type=password],textarea{display:block;width:100%}
+textarea{resize:vertical;font:.875rem/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+input[type=checkbox]{margin-right:8px;accent-color:var(--primary);width:18px;height:18px;vertical-align:middle}
+.confirmation{display:flex;gap:8px;align-items:center;min-height:44px;font-weight:400}
+.confirmation input{flex-shrink:0}
+button,.button{display:inline-flex;justify-content:center;align-items:center;min-height:44px;padding:10px 16px;line-height:1.3;border:1px solid var(--control);background:var(--paper);color:var(--ink);cursor:pointer;text-decoration:none;border-radius:2px;font-size:.875rem;font-weight:500}
+button:hover,.button:hover{background:var(--wash);text-decoration:none}
+button:active,.button:active{background:var(--soft);box-shadow:inset 0 0 0 1px var(--control)}
+.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.primary:hover,.primary:active{background:var(--primary-pressed);border-color:var(--primary-pressed);color:#fff}
+button:disabled{cursor:not-allowed;color:var(--muted);background:var(--wash);box-shadow:none}
+.danger{color:var(--danger)}
+.danger:hover,.danger:active{background:var(--danger-bg);color:var(--danger-hover)}
+button.danger{border-color:var(--danger)}
+.account{max-width:400px;margin:22px 0}
+.account-intro{max-width:560px}
+.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 0}
+.actions a:not(.button){padding:10px 6px;min-height:44px;display:inline-flex;align-items:center;font-size:.8125rem}
+.actions .danger{margin-left:auto}
+.help,.meta{color:var(--muted);font-size:.8125rem;font-weight:400}
+.error,.notice,.preview{padding:16px;border:1px solid var(--line);margin:0 0 20px}
+.error{border-color:var(--danger);background:var(--danger-bg);color:var(--danger)}
+.notice{background:var(--positive-bg);color:var(--positive)}
+.preview{background:var(--wash)}
+.preview>h2{font:600 .875rem/1.5 system-ui,sans-serif;margin-bottom:12px}
+.preview>h3{font:400 1.5rem/1.3 Georgia,"Times New Roman",serif;margin:12px 0}
+.preview-return{display:inline-flex;align-items:center;min-height:44px}
+.preview-label{font-size:.8125rem;font-weight:600;color:var(--muted);margin-top:18px}
+.empty{padding:24px 0;color:var(--muted)}
+.table-wrap{overflow-x:auto;border-block:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;text-align:left;font-size:.8125rem}
+th{font-weight:600;color:var(--muted);background:var(--wash);padding:12px;border-bottom:1px solid var(--line)}
+td{padding:6px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td:first-child{min-width:170px;overflow-wrap:anywhere}
+td a{display:inline-flex;align-items:center;min-height:44px;min-width:44px}
+.row-actions{white-space:nowrap}
+.row-actions a+a{margin-left:12px}
+.title-link{text-decoration:none;font-weight:500}
+.title-link:hover{text-decoration:underline}
+.state{white-space:nowrap}
+.status{display:inline-block;font-size:.8125rem;font-weight:500;padding:4px 8px;border-radius:2px;background:var(--positive-bg);color:var(--positive)}
+.status.draft{background:var(--draft-bg);color:var(--draft)}
+.table-date{white-space:nowrap;color:var(--muted);font-size:.8125rem}
+.search{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.search label{margin:0;font-size:.8125rem;font-weight:500;color:var(--muted)}
+.search input{width:260px;margin-top:6px}
+.search a{min-height:44px;padding:10px;display:flex;align-items:center;font-size:.8125rem}
+.pagination{display:flex;align-items:center;gap:16px;margin:20px 0 0;font-size:.875rem}
+.pagination a{min-height:44px;display:flex;align-items:center}
+.story-section{margin:20px 0}
+.story-section label{margin:0 0 7px}
+.formatting{display:flex;align-items:center;flex-wrap:wrap;gap:2px;background:var(--wash);border:1px solid var(--control);border-bottom:0;border-radius:2px 2px 0 0;padding:2px}
+.formatting button{border:1px solid transparent;background:transparent;min-width:44px;padding:10px;border-radius:0;box-shadow:none}
+.formatting button:hover{background:var(--paper);border-color:var(--line)}
+.formatting button:active{background:var(--soft);border-color:var(--control)}
+.formatting:not([hidden])+textarea{border-top-left-radius:0;border-top-right-radius:0}
+.editor-note{font-size:.8125rem;color:var(--muted);min-height:20px;margin:8px 0}
+.publishing{border-block:1px solid var(--line);background:var(--wash);padding:16px;margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.publishing label{margin:0;font-size:.875rem}
+.publishing .help{margin-left:auto}
+.format-help{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px}
+.format-help p{margin:4px 0}
+.format-help code{display:block;color:var(--ink)}
+details{margin:20px 0}
+summary{cursor:pointer;min-height:44px;padding:11px 0;font-size:.875rem;color:var(--accent)}
+details[open]>summary{margin-bottom:8px}
+.guide-section{border-top:1px solid var(--line);margin-top:24px;padding-top:20px}
+.guide-section h3{margin-bottom:10px}
+pre{max-width:100%;overflow:auto;padding:16px;background:var(--wash);border:1px solid var(--line);font:.8125rem/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.cow-news-item{border-bottom:1px solid var(--line);padding:4px 0 24px;margin-bottom:24px}
+.cow-news-item h2{font-size:1.5rem}
+.cow-news-item h2 a{text-decoration:none}
+.cow-news-item h2 a:hover{text-decoration:underline}
+.news-text{overflow-wrap:anywhere;font-size:1rem;line-height:1.75}
+.news-text h1{font:400 1.625rem/1.3 Georgia,"Times New Roman",serif;margin:18px 0 10px}
+.news-text h2{font-size:1.375rem;margin:18px 0 10px}
+.news-text h3{font-size:1.125rem;margin:16px 0 8px}
+.news-text pre{font-size:.8125rem}
+.news-text blockquote{border-left:3px solid var(--control);padding-left:16px;margin:16px 0;color:var(--muted)}
+.news-text p{margin:12px 0}
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding:16px 24px;font-size:.75rem;color:var(--muted)}
+@media(max-width:600px){
+  body{margin:12px 8px}
+  .masthead{padding:16px}
+  .edition{display:none}
+  .content{padding:20px 16px}
+  .tabs{padding:0 8px}
+  .tabs a,.tabs button{padding:10px}
+  .tabs .site-link{margin-left:0}
+  .section-head{align-items:flex-start;flex-wrap:wrap}
+  .shortcuts,.format-help{grid-template-columns:1fr}
+  .shortcuts a{padding:14px 16px}
+  .shortcuts a+a{border-left:0;border-top:1px solid var(--line)}
+  .stats div{padding:12px}
+  .stats dd{font-size:1.5rem}
+  .publishing .help{width:100%;margin:0}
+  input[type=text],input[type=password],textarea,select{font-size:1rem}
+  .actions .danger{margin-left:0}
+  .actions{gap:8px}
+  footer{padding:14px 16px}
+}
+@media(prefers-contrast:more){
+  :root{--muted:var(--ink);--line:var(--control)}
+  .tabs a[aria-current=page]{outline:2px solid var(--accent);outline-offset:-3px}
+}
+@media(forced-colors:active){
+  .primary,.status,.monogram{border:1px solid ButtonText;background:Canvas;color:CanvasText}
+  .tabs a[aria-current=page]{outline:2px solid Highlight;outline-offset:-3px}
+}
+/* No custom motion: all focus, selection and press feedback is static. */
+
+`
+// Optional progressive enhancement: inserts literal Markdown only. All forms,
+// previews and saves still work without browser JavaScript.
+function enhanceEditor() {
+  for (const toolbar of document.querySelectorAll('[data-editor-toolbar]')) {
+    toolbar.hidden = false
+    for (const button of toolbar.querySelectorAll('button[data-format]')) button.addEventListener('click', () => {
+      const field = document.getElementById(toolbar.dataset.editorToolbar)
+      let start = field.selectionStart, end = field.selectionEnd
+      let selected = field.value.slice(start, end), replacement, inside = 0, length
+      const format = button.dataset.format
+      if (['heading', 'list', 'quote'].includes(format)) {
+        start = start === 0 ? 0 : field.value.lastIndexOf('\n', start - 1) + 1
+        const boundary = field.value.indexOf('\n', end)
+        end = boundary === -1 ? field.value.length : boundary
+        const prefix = {heading:'## ', list:'- ', quote:'> '}[format]
+        replacement = field.value.slice(start, end).split('\n').map(line => prefix + line).join('\n')
+      } else if (format === 'link') {
+        replacement = '[' + (selected || 'link text') + '](https://example.com)'
+        inside = (selected || 'link text').length + 3
+        length = 'https://example.com'.length
+      } else {
+        const marker = {bold:'**', italic:'*', code:'`'}[format]
+        if (!marker) return
+        replacement = marker + (selected || 'text') + marker
+        inside = marker.length; length = (selected || 'text').length
+      }
+      const note = document.getElementById('editor-message')
+      if (field.value.length - (end - start) + replacement.length > field.maxLength) {
+        note.textContent = 'This would exceed the story character limit.'; return
+      }
+      field.focus()
+      field.setRangeText(replacement, start, end, 'select')
+      if (length !== undefined) field.setSelectionRange(start + inside, start + inside + length)
+      field.dispatchEvent(new Event('input', {bubbles:true}))
+      note.textContent = 'Formatting inserted. Preview to check it; your changes are not saved yet.'
+    })
+  }
+}
+const editorScript = '(' + enhanceEditor.toString() + ')()'
+const toolbar = target => '<div class="formatting" data-editor-toolbar="' + h(target) + '" role="group" aria-label="' + (target === 'body' ? 'Full' : 'Short') + ' story formatting" hidden>' +
+  [['bold','Bold','<strong>B</strong>'],['italic','Italic','<em>I</em>'],['heading','Heading','H2'],['list','Bullet list','List'],['quote','Blockquote','Quote'],['link','Insert link','Link'],['code','Inline code','Code']]
+    .map(([format, label, text]) => '<button type="button" data-format="' + format + '" aria-label="' + label + '" title="' + label + '">' + text + '</button>').join('') + '</div>'
+const badge = post => '<span class="status' + (post.published_at === null ? ' draft' : '') + '">' + (post.published_at === null ? 'Draft' : 'Published') + '</span>'
+const includeCode = "<?js await include(" + JSON.stringify('./' + filename) + ", { mode: 'feed', url: " + JSON.stringify(base) + ", limit: 5 }) ?>"
+
+if (embedded) {
+  const limit = locals.limit ?? 5
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new HttpError(500, 'News feed limit must be between 1 and 50.')
+  // Feed mode comes from include locals, never from a query parameter. It
+  // ignores POST actions, creates no session and leaves parent headers alone.
+  entries = db.all('SELECT * FROM mn_posts WHERE published_at IS NOT NULL ORDER BY published_at DESC,id DESC LIMIT ?', [limit])
+} else {
+  res.header('cache-control', 'no-store').header('x-content-type-options', 'nosniff').header('referrer-policy', 'same-origin')
+  res.header('content-security-policy', "default-src 'none'; style-src 'sha256-" + createHash('sha256').update(css).digest('base64') + "'; script-src 'sha256-" + createHash('sha256').update(editorScript).digest('base64') + "'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+  if (!['GET', 'HEAD', 'POST'].includes(req.method())) {
+    res.header('allow', 'GET, HEAD, POST'); throw new HttpError(405, 'This method is not supported.')
+  }
+  if (!['news', 'setup', 'login', 'dashboard', 'help', 'admin', 'new', 'edit', 'delete'].includes(view)) throw new HttpError(404, 'Page not found.')
+  if (!account) {
+    view = 'setup'
+    try { await writeFile(setupPath, randomBytes(32).toString('hex'), {flag:'wx', mode:0o600}) }
+    catch (failure) { if (failure.code !== 'EEXIST') throw failure }
+    setupKey = (await readFile(setupPath, 'utf8')).trim()
+    if (!/^[a-f0-9]{64}$/.test(setupKey)) throw new HttpError(503, 'The setup key is not ready. Reload the page; if this persists, check the private setup-key file.')
+  } else if (view === 'setup') throw new HttpError(409, 'Setup is complete. The installer is locked.')
+  if (view !== 'news') {
+    const name = 'mn_' + createHash('sha256').update(databasePath).digest('hex').slice(0, 16)
+    current = await session(db, req, res, {name, path:base, secure:req.scheme() === 'https', maxAge:8 * 60 * 60})
+    if (!['setup', 'login'].includes(view) && current.data.userId !== 1) res.redirect(link({view:'login'}), 303)
+    if (view === 'login' && current.data.userId === 1) res.redirect(link({view:'dashboard'}), 303)
+    if (['edit', 'delete'].includes(view)) {
+      const row = db.get('SELECT * FROM mn_posts WHERE id=?', [number(req.get('id'))])
+      if (!row) throw new HttpError(404, 'News item not found.')
+      entry = fromRow(row)
+    } else if (view === 'new') entry = blank()
+  }
+  if (req.method() === 'POST') {
+    try {
+      if (!current) { res.header('allow', 'GET, HEAD'); throw new HttpError(405, 'Use the editor to change news.') }
+      const values = form(req)
+      current.verify(values)
+      const action = field(values, 'action')
+      if (view === 'setup' && action === 'setup') {
+        if (!setupKey || !secretMatches(field(values, 'setupKey'), setupKey)) throw new HttpError(403, 'The setup key is incorrect.')
+        username = field(values, 'username').trim()
+        if (!/^[A-Za-z0-9_-]{3,32}$/.test(username)) throw new HttpError(422, 'Username: use 3–32 letters, numbers, underscores or dashes.')
+        if (field(values, 'password') !== field(values, 'confirmPassword')) throw new HttpError(422, 'The passwords do not match.')
+        const encoded = await hashPassword(field(values, 'password'))
+        await db.transaction(() => {
+          if (db.get('SELECT id FROM mn_account WHERE id=1')) throw new HttpError(409, 'Setup is already complete.')
+          db.run('INSERT INTO mn_account VALUES(1,?,?)', [username, encoded])
+        }, {mode:'immediate'})
+        res.redirect(link({view:'login', installed:'1'}), 303)
+      } else if (view === 'login' && action === 'login') {
+        username = field(values, 'username').trim()
+        const password = field(values, 'password'), now = Date.now()
+        await db.transaction(() => {
+          db.run('DELETE FROM mn_attempts WHERE until_at <= ?', [now])
+          const attempts = db.get('SELECT attempts FROM mn_attempts WHERE id=1')
+          if (attempts?.attempts >= 8) throw new HttpError(429, 'Too many login attempts. Try again in 15 minutes.')
+          db.run('INSERT INTO mn_attempts VALUES(1,1,?) ON CONFLICT(id) DO UPDATE SET attempts=attempts+1', [now + 900000])
+        }, {mode:'immediate'})
+        const valid = await verifyPassword(password, account.password_hash)
+        if (!valid || username !== account.username) throw new HttpError(401, 'Incorrect username or password.')
+        await current.replace({userId:1})
+        db.run('DELETE FROM mn_attempts WHERE id=1')
+        res.redirect(link({view:'dashboard'}), 303)
+      } else {
+        if (current.data.userId !== 1) throw new HttpError(403, 'Log in before changing news.')
+        if (action === 'logout') { current.destroy(); res.redirect(link(), 303) }
+        if (['new', 'edit'].includes(view) && ['save', 'preview'].includes(action)) {
+          entry = {...entry, version:number(field(values, 'version')), title:field(values, 'title').trim(),
+            summary:field(values, 'summary').trim(), body:field(values, 'body').trim(), state:field(values, 'state')}
+          creationKey = field(values, 'creationKey')
+          if (!entry.title || entry.title.length > 160 || /[\r\n]/.test(entry.title)) throw new HttpError(422, 'Enter a single-line title of 1–160 characters.')
+          if (!entry.body || entry.body.length > 20000 || entry.summary.length > 500) throw new HttpError(422, 'Enter 1–20,000 characters of news; the short text may contain up to 500.')
+          if (!['draft', 'published'].includes(entry.state)) throw new HttpError(422, 'Choose Draft or Published.')
+          if (!/^[a-f0-9]{32}$/.test(creationKey)) throw new HttpError(400, 'Invalid editor form. Open Add news again.')
+          if (action === 'preview') preview = true
+          else {
+            const id = await db.transaction(() => {
+              const now = Date.now()
+              if (view === 'new') {
+                const prior = db.get('SELECT id FROM mn_posts WHERE creation_key=?', [creationKey])
+                if (prior) return prior.id
+                return Number(db.run('INSERT INTO mn_posts(title,summary,body,published_at,updated_at,creation_key) VALUES(?,?,?,?,?,?)',
+                  [entry.title, entry.summary, entry.body, entry.state === 'published' ? now : null, now, creationKey]).lastInsertRowid)
+              }
+              const published = entry.state === 'published' ? (entry.published_at || now) : null
+              const result = db.run('UPDATE mn_posts SET title=?,summary=?,body=?,published_at=?,updated_at=?,version=version+1 WHERE id=? AND version=?',
+                [entry.title, entry.summary, entry.body, published, now, entry.id, entry.version])
+              if (!result.changes) throw new HttpError(409, 'This item changed in another tab. Your text is kept below; open the current item before saving again.')
+              return entry.id
+            }, {mode:'immediate'})
+            res.redirect(link({view:'edit', id:String(id), saved:'1'}), 303)
+          }
+        } else if (view === 'delete' && action === 'delete') {
+          if (field(values, 'confirm') !== 'yes') throw new HttpError(422, 'Tick the confirmation box before deleting.')
+          const version = number(field(values, 'version'))
+          const result = db.run('DELETE FROM mn_posts WHERE id=? AND version=?', [entry.id, version])
+          if (!result.changes) throw new HttpError(409, 'This item changed. Reload and review it before deleting.')
+          res.redirect(link({view:'admin', deleted:'1'}), 303)
+        } else throw new HttpError(400, 'Unknown form action.')
+      }
+    } catch (failure) {
+      if (!(failure instanceof HttpError)) throw failure
+      res.status(failure.status); error = failure.message
+    }
+  }
+  if (view === 'dashboard') {
+    totals = db.get('SELECT count(*) AS total, count(published_at) AS published, count(*)-count(published_at) AS drafts FROM mn_posts')
+    entries = db.all('SELECT * FROM mn_posts ORDER BY updated_at DESC,id DESC LIMIT 5')
+  }
+  if (['news', 'admin'].includes(view)) {
+    query = view === 'admin' ? (req.get('q') || '').trim() : ''
+    if (query.length > 100) throw new HttpError(400, 'Search must contain at most 100 characters.')
+    if (view === 'news' && req.get('id') !== undefined) {
+      entry = db.get('SELECT * FROM mn_posts WHERE id=? AND published_at IS NOT NULL', [number(req.get('id'))])
+      if (!entry) throw new HttpError(404, 'That news item is not available.')
+    } else {
+      const condition = view === 'admin' ? 'instr(lower(title),lower(?)) > 0' : 'published_at IS NOT NULL'
+      const params = view === 'admin' ? [query] : []
+      const count = db.get('SELECT count(*) AS n FROM mn_posts WHERE ' + condition, params).n
+      pages = Math.max(1, Math.ceil(count / 10)); page = Math.min(number(req.get('page'), 1), pages)
+      entries = db.all('SELECT * FROM mn_posts WHERE ' + condition + ' ORDER BY ' + (view === 'admin' ? 'updated_at' : 'published_at') + ' DESC,id DESC LIMIT 10 OFFSET ?', [...params, (page - 1) * 10])
+    }
+  }
+}
+?>
+<?js if (embedded) { ?>
+<div class="cow-news">
+<?js if (!entries.length) { ?><p>No news published yet.</p><?js } ?>
+<?js for (const post of entries) echo(article(post)) ?>
+</div>
+<?js } else { ?>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= h(siteTitle) ?></title><style><?= css ?></style></head>
+<body><a class="skip-link" href="#main-content">Skip to content</a><main>
+<header class="masthead"><div class="brand"><span class="monogram" aria-hidden="true">m</span><div><h1><?= h(siteTitle) ?></h1><p>A small news editor for your website.</p></div></div><div class="edition"><p class="eyebrow">A simple news desk</p><span><?= h(new Date().toISOString().slice(0, 10)) ?> · UTC</span></div></header>
+<nav class="tabs" aria-label="News navigation">
+<?js if (current?.data.userId === 1) { ?>
+<?js for (const [key, label] of [['dashboard','Dashboard'],['new','Add news'],['admin','Edit news'],['help','Help / About']]) { ?>
+<a href="<?= h(link({view:key})) ?>"<?= (view === key || (key === 'admin' && ['edit','delete'].includes(view))) ? ' aria-current="page"' : '' ?>><?= label ?></a>
+<?js } ?>
+<a class="site-link" href="<?= h(link()) ?>">View news</a>
+<form method="post" action="<?= h(link({view:'admin'})) ?>"><input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>"><button name="action" value="logout">Log out</button></form>
+<?js } else { ?><a href="<?= h(link()) ?>"<?= view === 'news' ? ' aria-current="page"' : '' ?>>View news</a><?js if (account) { ?><a class="site-link" href="<?= h(link({view:'login'})) ?>"<?= view === 'login' ? ' aria-current="page"' : '' ?>>Editor login</a><?js } } ?>
+</nav>
+<div class="content" id="main-content" tabindex="-1">
+<?js if (error) { ?><p class="error" role="alert"><?= h(error) ?></p><?js } ?>
+<?js if (view === 'setup' || view === 'login') { ?>
+<p class="eyebrow"><?= view === 'setup' ? 'Make yourself at home' : 'Your writing space' ?></p>
+<h2><?= view === 'setup' ? 'Set up MiniNews' : 'Editor login' ?></h2>
+<?js if (view === 'setup') { ?><div class="account-intro"><p>Copy the setup key from <code><?= h(basename(setupPath)) ?></code>, created beside this page. This stops a visitor from claiming your editor.</p><p class="help">Then choose your editor account. Setup locks after the first account is created.</p></div><?js } else { ?><p class="help">Sign in to write, edit and publish your news.</p><?js } ?>
+<?js if (req.get('installed') === '1') { ?><p class="notice">Setup complete. Log in with your new account.</p><?js } ?>
+<form method="post" action="<?= h(link({view})) ?>" class="account">
+<input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>">
+<?js if (view === 'setup') { ?><label for="setupKey">Setup key</label><input id="setupKey" type="password" name="setupKey" required autocomplete="off"><?js } ?>
+<label for="username">Username</label><input id="username" type="text" name="username" value="<?= h(username) ?>" required maxlength="32" autocomplete="username">
+<label for="password">Password</label><input id="password" type="password" name="password" required minlength="12" maxlength="256" autocomplete="<?= view === 'setup' ? 'new-password' : 'current-password' ?>">
+<?js if (view === 'setup') { ?><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" name="confirmPassword" required minlength="12" maxlength="256" autocomplete="new-password"><p class="help">Use a password of at least 12 characters.</p><?js } ?>
+<div class="actions"><button class="primary" name="action" value="<?= view ?>"><?= view === 'setup' ? 'Create editor account' : 'Log in' ?></button></div>
+</form>
+<?js } else if (view === 'dashboard') { ?>
+<div class="section-head"><div><p class="eyebrow">Overview</p><h2>Welcome back, <?= h(account.username) ?>.</h2><p>A little space to keep your website up to date.</p></div><a class="button primary" href="<?= h(link({view:'new'})) ?>">Add news</a></div>
+<dl class="stats" aria-label="News statistics"><div><dt>Total stories</dt><dd><?= totals.total ?></dd></div><div><dt>Published</dt><dd><?= totals.published ?></dd></div><div><dt>In draft</dt><dd><?= totals.drafts ?></dd></div></dl>
+<div class="section-label"><h3>Your workspace</h3></div>
+<div class="shortcuts"><a href="<?= h(link({view:'new'})) ?>"><strong>Add a story</strong><span>Write a draft or publish an update.</span></a><a href="<?= h(link({view:'admin'})) ?>"><strong>Edit your news</strong><span>Find drafts and published stories.</span></a><a href="<?= h(link({view:'help'})) ?>"><strong>Put news on your site</strong><span>Include news in your own layout.</span></a></div>
+<div class="section-label"><h3>Recently updated</h3><a href="<?= h(link({view:'admin'})) ?>">All stories</a></div>
+<?js if (!entries.length) { ?><p class="empty">No stories yet. Add your first news item when you are ready.</p><?js } else { ?>
+<div class="table-wrap"><table aria-label="Recently updated stories"><thead><tr><th scope="col">Story</th><th scope="col">Status</th><th scope="col">Updated (UTC)</th></tr></thead><tbody><?js for (const post of entries) { ?><tr><td><a class="title-link" href="<?= h(link({view:'edit',id:String(post.id)})) ?>"><?= h(post.title) ?></a></td><td class="state"><?= badge(post) ?></td><td class="table-date"><?= h(date(post.updated_at)) ?></td></tr><?js } ?></tbody></table></div>
+<?js } ?>
+<?js } else if (view === 'help') { ?>
+<div class="section-head"><div><p class="eyebrow">A small field guide</p><h2>Using MiniNews</h2><p>Writing, publishing and adding news to your website.</p></div></div>
+<section class="guide-section"><h3>Show news on your website</h3><p>Include the latest published stories in another Cow page:</p><pre><code><?= h(includeCode) ?></code></pre><p class="help">Adjust the include path for the host page. Keep the URL pointed at this editor. The limit can be 1–50; drafts are never included.</p></section>
+<section class="guide-section"><h3>Writing with Markdown</h3><div class="format-help"><p><code>**bold** and *italic*</code>Give a few words emphasis.</p><p><code>## A heading</code>Give your story some structure.</p><p><code>[link text](https://example.com)</code>Point readers somewhere useful.</p><p><code>- A list item</code>Keep a list of things together.</p><p><code>&gt; A quotation</code>Set a quotation apart.</p><p><code>`inline code`</code>Show code as text.</p></div><p class="help">Blank lines separate paragraphs. Use three backticks on their own lines around code blocks. This is a small Markdown subset, not full CommonMark. Raw HTML, images, tables and nested lists are not supported.</p></section>
+<section class="guide-section"><h3>Draft, preview, publish</h3><p>The short story appears in listings; the full story appears on its own page. If the short story is empty, an excerpt is used. Preview does not save. Choose Published and save when the story is ready.</p><p class="help">Formatting buttons insert Markdown, not HTML. The editor also works without JavaScript. Competing edits are checked before saving so another tab cannot silently overwrite your work.</p></section>
+<section class="guide-section"><h3>Your data stays with you</h3><p>Stories and your editor account are stored in <code><?= h(basename(databasePath)) ?></code>, beside this page. Back up the database with Cow stopped, or use a proper SQLite backup tool.</p><p class="help">MiniNews is a single-account Cow example. No tracking, remote fonts or editor dependencies. Use HTTPS for real logins. Media uploads, comments and scheduled publishing are not included.</p></section>
+<?js } else if (view === 'admin') { ?>
+<div class="section-head"><div><p class="eyebrow">Your collection</p><h2>Manage news</h2><p>Keep the published pieces and the works in progress together.</p></div><a class="button primary" href="<?= h(link({view:'new'})) ?>">Add news</a></div>
+<?js if (req.get('deleted') === '1') { ?><p class="notice">News item deleted.</p><?js } ?>
+<form class="search" method="get" action="<?= h(base) ?>"><input type="hidden" name="view" value="admin"><label for="q">Find by title<input id="q" type="text" name="q" value="<?= h(query) ?>" maxlength="100"></label><button>Find</button><a href="<?= h(link({view:'admin'})) ?>">Show all</a></form>
+<div class="table-wrap"><table aria-label="All news stories"><thead><tr><th scope="col">Title</th><th scope="col">Status</th><th scope="col">Updated (UTC)</th><th scope="col">Actions</th></tr></thead><tbody>
+<?js if (!entries.length) { ?><tr><td colspan="4">No news items found. <a href="<?= h(link({view:'new'})) ?>">Add news</a>.</td></tr><?js } ?>
+<?js for (const post of entries) { ?><tr><td><a class="title-link" href="<?= h(link({view:'edit',id:String(post.id)})) ?>"><?= h(post.title) ?></a></td><td class="state"><?= badge(post) ?></td><td class="table-date"><?= h(date(post.updated_at)) ?></td><td class="row-actions"><a href="<?= h(link({view:'edit',id:String(post.id)})) ?>">Edit</a><a class="danger" href="<?= h(link({view:'delete',id:String(post.id)})) ?>">Delete</a></td></tr><?js } ?>
+</tbody></table></div>
+<details><summary>Show news on another Cow page</summary><p>Use this include before or after your own HTML:</p><pre><code><?= h(includeCode) ?></code></pre><p class="help">The include outputs only published news, without the editor or a page layout. Adjust the include path if your page is in a different folder.</p></details>
+<?js } else if (view === 'new' || view === 'edit') { ?>
+<div class="section-head"><div><p class="eyebrow">The writing desk</p><h2><?= view === 'new' ? 'Add news' : 'Edit news' ?></h2><p><?= view === 'new' ? 'Write in Markdown, preview, then publish when you are ready.' : 'Edit your story below. Nothing changes until you save.' ?></p></div><span class="status<?= entry.state === 'draft' ? ' draft' : '' ?>"><?= entry.state === 'draft' ? 'Draft' : 'Published' ?></span></div>
+<?js if (req.get('saved') === '1' && !error && !preview) { ?><p class="notice" role="status">News saved. <?= entry.state === 'draft' ? 'This draft is only visible to you.' : 'This story is visible on your website.' ?></p><?js } ?>
+<?js if (preview) { ?><section class="preview"><h2>Preview — not saved</h2><h3><?= h(entry.title) ?></h3><?js if (entry.summary) { ?><p class="preview-label">Short story / listing</p><div class="news-text"><?= markdown(entry.summary) ?></div><p class="preview-label">Full story</p><?js } ?><div class="news-text"><?= markdown(entry.body) ?></div><a class="preview-return" href="#title">Return to editing</a></section><?js } ?>
+<form method="post" action="<?= h(link(view === 'new' ? {view} : {view,id:String(entry.id)})) ?>">
+<input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>"><input type="hidden" name="version" value="<?= entry.version || '' ?>"><input type="hidden" name="creationKey" value="<?= h(creationKey) ?>">
+<label for="title">Article title</label><input id="title" type="text" name="title" value="<?= h(entry.title) ?>" required maxlength="160">
+<div class="story-section"><label for="summary">Short story <span class="help">— optional</span></label><?= toolbar('summary') ?><textarea id="summary" name="summary" rows="3" maxlength="500" aria-describedby="short-help"><?= h(entry.summary) ?></textarea><p class="help" id="short-help">A small introduction for the news list. Leave blank to use an excerpt.</p></div>
+<div class="story-section"><label for="body">Full story <span class="help">— Markdown</span></label><?= toolbar('body') ?><textarea id="body" name="body" rows="11" required maxlength="20000" aria-describedby="markdown-help"><?= h(entry.body) ?></textarea></div>
+<p class="editor-note" id="editor-message" role="status" aria-live="polite">Preview checks the formatting without saving your changes.</p>
+<details id="markdown-help"><summary>Formatting help</summary><p><code>**bold**</code>, <code>*italic*</code>, <code>[link](https://example.com)</code>, <code>`inline code`</code></p><p>Start a line with <code># Heading</code>, <code>- list item</code>, <code>1. numbered item</code> or <code>&gt; quote</code>. Surround a code block with three backticks on their own lines. Blank lines separate paragraphs.</p><p class="help">A small Markdown subset: raw HTML, images, tables and nested lists are not supported. Nothing in your article runs as code.</p></details>
+<div class="publishing"><label for="state">Publication</label><select id="state" name="state" aria-describedby="publication-help"><option value="draft"<?= entry.state === 'draft' ? ' selected' : '' ?>>Draft</option><option value="published"<?= entry.state === 'published' ? ' selected' : '' ?>>Published</option></select><span class="help" id="publication-help">On save: Draft keeps it private; Published makes it public.</span></div>
+<div class="actions"><button class="primary" name="action" value="save">Save news</button><button name="action" value="preview">Preview</button><a href="<?= h(link({view:'admin'})) ?>">Cancel</a><?js if (entry.id) { ?><a href="<?= h(link({view:'edit',id:String(entry.id)})) ?>">Reload stored version</a><a class="danger" href="<?= h(link({view:'delete',id:String(entry.id)})) ?>">Delete story</a><?js } ?></div>
+</form>
+<?js } else if (view === 'delete') { ?>
+<p class="eyebrow">Remove a story</p><h2>Delete news</h2><p>Delete <strong><?= h(entry.title) ?></strong>? This cannot be undone.</p>
+<form method="post" action="<?= h(link({view:'delete',id:String(entry.id)})) ?>"><input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>"><input type="hidden" name="version" value="<?= entry.version ?>"><label class="confirmation"><input type="checkbox" name="confirm" value="yes" required>Yes, delete this news item.</label><div class="actions"><a class="button" href="<?= h(link({view:'admin'})) ?>">Cancel</a><button class="danger" name="action" value="delete">Delete news</button></div></form>
+<?js } else { ?>
+<?js if (entry) { echo(article(entry, true)) ?><p><a href="<?= h(link()) ?>">All news</a></p><?js } else { ?>
+<?js if (!entries.length) { ?><h2>News</h2><p>No news published yet.</p><?js } ?>
+<?js for (const post of entries) echo(article(post)) ?>
+<?js } ?>
+<?js } ?>
+<?js if (pages > 1) { ?><nav class="pagination" aria-label="News pages"><?js if (page > 1) { ?><a href="<?= h(link({view,page:String(page-1),...(query ? {q:query} : {})})) ?>">Previous</a><?js } ?><span>Page <?= page ?> of <?= pages ?></span><?js if (page < pages) { ?><a href="<?= h(link({view,page:String(page+1),...(query ? {q:query} : {})})) ?>">Next</a><?js } ?></nav><?js } ?>
+</div>
+<footer><span>MiniNews / Made with Cow</span><span>Single-file publishing · All dates in UTC</span></footer>
+</main>
+<?js if (view === 'new' || view === 'edit') { ?><script><?= editorScript ?></script><?js } ?>
+</body></html>
+<?js } ?>
