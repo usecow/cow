@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { mkdtemp, rm, stat, utimes, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { createServer, get } from 'node:http'
 import { connect } from 'node:net'
 import { once } from 'node:events'
@@ -13,11 +13,12 @@ import { test } from 'node:test'
 import { CowApp } from '../lib/app.mjs'
 
 async function fixture(t, options = {}) {
-  const root = await mkdtemp(join(tmpdir(), 'cow-hardening-'))
+  // Cow opens real paths; Windows temp folders can be 8.3 short names.
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'cow-hardening-')))
   const app = new CowApp({ rootDir: root, port: 0, workers: 1, logger: { error() {} }, ...options })
   t.after(async () => {
     await app.close().catch(() => {})
-    assert.equal(dirname(root), tmpdir())
+    assert.equal(dirname(root), await realpath(tmpdir()))
     await rm(root, { recursive: true, force: true, maxRetries: 3 })
   })
   return {

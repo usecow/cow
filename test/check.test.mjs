@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,7 +12,8 @@ const exec = promisify(execFile)
 const cli = fileURLToPath(new URL('../bin/cow.mjs', import.meta.url))
 
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'cow-check-'))
+  // Cow reports real paths; Windows temp folders can be 8.3 short names.
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'cow-check-')))
   t.after(() => rm(root, { recursive: true, force: true }))
   const write = async (name, source) => {
     const file = join(root, name)

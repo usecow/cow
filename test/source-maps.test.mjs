@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
@@ -7,7 +7,8 @@ import { CowApp } from '../lib/app.mjs'
 const errorColumn = globalThis.Bun ? 18 : 9
 
 async function fixture(t, cache=true) {
-  const root=await mkdtemp(join(tmpdir(),'cow source maps-'))
+  // Stack frames use real paths; Windows temp folders can be 8.3 short names.
+  const root=await realpath(await mkdtemp(join(tmpdir(),'cow source maps-')))
   const app=new CowApp({rootDir:root,workers:1,cache,maxRequestsPerWorker:0})
   t.after(async()=>{try {await app.close()} finally {await rm(root,{recursive:true,force:true})}})
   await app.initialize()
