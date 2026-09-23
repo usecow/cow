@@ -64,9 +64,11 @@ test('the packed runtime serves installed projects and plain sites through npx',
   const root = await mkdtemp(join(tmpdir(), 'cow-package-test-'))
   const canonicalRoot = await realpath(root)
   assert.ok(!inside(await realpath(project), canonicalRoot), 'The test must live outside the checkout')
-  const app = join(root, 'independent app') // Exercise Windows paths with spaces.
-  const artifacts = join(root, 'tarballs')
-  const dependency = join(root, 'dependency')
+  // Build from the real path: Cow reports real paths, and Windows temp
+  // folders can be 8.3 short names.
+  const app = join(canonicalRoot, 'independent app') // Exercise Windows paths with spaces.
+  const artifacts = join(canonicalRoot, 'tarballs')
+  const dependency = join(canonicalRoot, 'dependency')
   let server
   t.after(async () => {
     await server?.stop()
