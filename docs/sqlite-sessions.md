@@ -255,7 +255,13 @@ escaping. These are small functions that you use through ordinary imports.
 
 `session(db, req, res, options)` opens the visitor's session, or creates one
 and sends its cookie. Session data is JSON that Cow stores in the same SQLite
-database, in a table named `jin_sessions`.
+database, in a table named `cow_sessions`.
+
+> **Note:** Cow 0.0.1 named this table `jin_sessions` and the default cookie
+> `jin_session`. When a site upgrades, Cow renames the table the first time it
+> opens a session, and moves each visitor to the `cow_session` cookie on their
+> next visit, so nobody is signed out. If a database already has a
+> `cow_sessions` table, Cow uses it and leaves `jin_sessions` alone.
 
 ### Remember a visitor
 
@@ -568,7 +574,7 @@ Cow validates cookies before it sets any header:
 
 ### Session options
 
-`session()` accepts `name` (the cookie name, `jin_session` by default) and
+`session()` accepts `name` (the cookie name, `cow_session` by default) and
 `maxAge` (the session lifetime in seconds, 28800 by default, which is eight
 hours). It also accepts the cookie scope and flag options that are described
 above. It does not accept `expires`, because the session's stored lifetime

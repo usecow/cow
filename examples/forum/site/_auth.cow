@@ -20,7 +20,7 @@ export function headers(res) {
   res.setHeader('cache-control', 'no-store')
 }
 
-export const openSession = (req, res) => session(db, req, res, { name: 'jin_forum', secure: config.secureCookies })
+export const openSession = (req, res) => session(db, req, res, { name: 'cow_forum', secure: config.secureCookies })
 export const userFor = (current) => db.get('SELECT id, username, role FROM forum_users WHERE id = ?', [current.data.userId ?? -1])
 
 export async function context(req, res, { member = false, admin = false } = {}) {

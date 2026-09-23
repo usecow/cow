@@ -50,7 +50,7 @@ function client(f) {
         body: values === undefined ? undefined : new URLSearchParams(values)
       })
       for (const item of response.headers.getSetCookie()) {
-        if (item.startsWith('jin_forum=')) cookie = item.split(';')[0]
+        if (item.startsWith('cow_forum=')) cookie = item.split(';')[0]
       }
       return { status: response.status, headers: response.headers, text: await response.text() }
     }
@@ -265,7 +265,7 @@ test('setup, registration and request defenses reject forged, duplicate and expi
   assert.equal((await a.request('/logout', { csrf: 'wrong' })).status, 403)
   for (const path of ['/_db.cow', '/_config.cow', '/_account.cow', '/_header', '/data/forum.sqlite', '/%2e%2e%2fdata/forum.sqlite', '/topic.cow']) assert.notEqual((await a.request(path)).status, 200, path)
   assert.equal((await a.request('/assets/site.css')).status, 200)
-  f.db((db) => db.exec('UPDATE jin_sessions SET expires_at=0'))
+  f.db((db) => db.exec('UPDATE cow_sessions SET expires_at=0'))
   assert.equal((await a.request('/new')).headers.get('location'), '/login')
   // Login rate counters are shared in SQLite, not in an individual worker VM.
   const loginPage = await b.request('/login')

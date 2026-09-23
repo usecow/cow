@@ -31,18 +31,45 @@ function fixture(t) {
   } }
 }
 
-test('Cow session helpers reopen an existing Jin session without changing the table or cookie identity', async t => {
+test('0.0.1 sessions move to cow_sessions and the cow_session cookie without signing anyone out', async t => {
   const f = fixture(t), token = 'a'.repeat(64), csrf = 'b'.repeat(64)
   const identity = createHash('sha256').update(token).digest('hex')
-  f.db.exec('CREATE TABLE jin_sessions(token_hash TEXT PRIMARY KEY, data TEXT NOT NULL, csrf TEXT NOT NULL, expires_at INTEGER NOT NULL, version INTEGER NOT NULL DEFAULT 0)')
+  f.db.exec('CREATE TABLE jin_sessions(token_hash TEXT PRIMARY KEY, data TEXT NOT NULL, csrf TEXT NOT NULL, expires_at INTEGER NOT NULL, version INTEGER NOT NULL DEFAULT 0); CREATE INDEX jin_sessions_expiry ON jin_sessions(expires_at)')
   f.db.run('INSERT INTO jin_sessions(token_hash,data,csrf,expires_at) VALUES(?,?,?,?)', [identity, '{"userId":1}', csrf, Math.floor(Date.now()/1000)+3600])
-  const existing = await f.open('jin_session=' + token)
-  assert.deepEqual(existing.current.data, { userId: 1 })
-  assert.equal(existing.current.csrfToken, csrf)
-  assert.equal(existing.headers['set-cookie'], undefined)
-  existing.current.update({ userId: 1, theme: 'sage' })
-  assert.equal(f.db.get('SELECT data FROM jin_sessions WHERE token_hash=?', [identity]).data, '{"userId":1,"theme":"sage"}')
-  assert.equal(f.db.get("SELECT name FROM sqlite_master WHERE name='cow_sessions'"), undefined)
+  const moved = await f.open('jin_session=' + token)
+  assert.deepEqual(moved.current.data, { userId: 1 })
+  assert.equal(moved.current.csrfToken, csrf)
+  const [removed, added] = moved.headers['set-cookie']
+  assert.match(removed, /^jin_session=; .*Max-Age=0/)
+  assert.match(added, new RegExp('^cow_session=' + token + ';'))
+  assert.deepEqual(f.db.all("SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").map(row => row.name), ['cow_sessions', 'cow_sessions_expiry'])
+  moved.current.update({ userId: 1, theme: 'sage' })
+  const again = await f.open(moved.cookie)
+  assert.equal(again.headers['set-cookie'], undefined)
+  assert.deepEqual(again.current.data, { userId: 1, theme: 'sage' })
+})
+
+test('sessions with their own cookie name survive the table rename and ignore the old default cookie', async t => {
+  const f = fixture(t), token = 'c'.repeat(64)
+  f.db.exec('CREATE TABLE jin_sessions(token_hash TEXT PRIMARY KEY, data TEXT NOT NULL, csrf TEXT NOT NULL, expires_at INTEGER NOT NULL, version INTEGER NOT NULL DEFAULT 0)')
+  f.db.run('INSERT INTO jin_sessions(token_hash,data,csrf,expires_at) VALUES(?,?,?,?)', [createHash('sha256').update(token).digest('hex'), '{"editor":true}', 'csrf', Math.floor(Date.now()/1000)+3600])
+  const kept = await f.open('mn_news=' + token, { name: 'mn_news' })
+  assert.deepEqual(kept.current.data, { editor: true })
+  assert.equal(kept.headers['set-cookie'], undefined)
+  const other = await f.open('jin_session=' + token, { name: 'app' })
+  assert.deepEqual(other.current.data, {})
+  assert.equal(other.headers['set-cookie'].length, 1)
+  assert.match(other.headers['set-cookie'][0], /^app=/)
+})
+
+test('an existing cow_sessions table wins and jin_sessions is left alone', async t => {
+  const f = fixture(t)
+  await f.open()
+  f.db.exec('CREATE TABLE jin_sessions(token_hash TEXT PRIMARY KEY, data TEXT NOT NULL, csrf TEXT NOT NULL, expires_at INTEGER NOT NULL)')
+  f.db.run('INSERT INTO jin_sessions VALUES (?,?,?,?)', ['old', '{}', 'csrf', Math.floor(Date.now()/1000)+3600])
+  await f.open()
+  assert.equal(f.db.get('SELECT count(*) AS n FROM jin_sessions').n, 1)
+  assert.equal(f.db.get('SELECT count(*) AS n FROM cow_sessions').n, 2)
 })
 
 test('session updates persist explicitly without rotating identity, CSRF or expiry', async t => {
@@ -80,7 +107,7 @@ test('logout cannot be undone by stale update, renewal or identity rotation', as
     assert.throws(action, { status: 403, code: 'COW_SESSION_ENDED' })
   }
   await assert.rejects(stale.current.replace({ user: 1 }), { code: 'COW_SESSION_ENDED' })
-  assert.equal(f.db.get('SELECT count(*) AS n FROM jin_sessions').n, 0)
+  assert.equal(f.db.get('SELECT count(*) AS n FROM cow_sessions').n, 0)
   assert.match(a.headers['set-cookie'].at(-1), /Max-Age=0; Expires=Thu, 01 Jan 1970/)
   assert.throws(() => a.current.update({}), { code: 'COW_SESSION_ENDED' })
   const fresh = await f.open(stale.cookie)
@@ -114,13 +141,13 @@ test('touch explicitly renews stored and browser expiry; reads and updates do no
 
 test('session cleanup is bounded, happens for returning visitors and can run explicitly', async t => {
   const f = fixture(t), live = await f.open()
-  for (let n = 0; n < 107; n++) f.db.run('INSERT INTO jin_sessions (token_hash,data,csrf,expires_at) VALUES (?,?,?,?)', [`old-${n}`, '{}', 'expired', 0])
+  for (let n = 0; n < 107; n++) f.db.run('INSERT INTO cow_sessions (token_hash,data,csrf,expires_at) VALUES (?,?,?,?)', [`old-${n}`, '{}', 'expired', 0])
   await f.open(live.cookie)
-  assert.equal(f.db.get('SELECT count(*) AS n FROM jin_sessions').n, 8)
+  assert.equal(f.db.get('SELECT count(*) AS n FROM cow_sessions').n, 8)
   assert.equal(pruneSessions(f.db, { limit: 5 }), 5)
   assert.equal(pruneSessions(f.db), 2)
   assert.equal(pruneSessions(f.db), 0)
-  assert.equal(f.db.get('SELECT count(*) AS n FROM jin_sessions').n, 1)
+  assert.equal(f.db.get('SELECT count(*) AS n FROM cow_sessions').n, 1)
   for (const limit of [0, -1, 1.5, Infinity]) assert.throws(() => pruneSessions(f.db, { limit }), TypeError)
 })
 
@@ -132,8 +159,8 @@ test('legacy four-column session databases upgrade without losing data or identi
   const a = await f.open(cookie)
   assert.deepEqual(a.current.data, { legacy: true })
   assert.equal(a.current.csrfToken, 'old-csrf')
-  assert.equal(a.headers['set-cookie'], undefined)
-  assert.ok(f.db.all('PRAGMA table_info(jin_sessions)').some(column => column.name === 'version'))
+  assert.match(a.headers['set-cookie'].at(-1), new RegExp('^cow_session=' + legacyId + ';'))
+  assert.ok(f.db.all('PRAGMA table_info(cow_sessions)').some(column => column.name === 'version'))
   a.current.update({ preserved: true })
   const b = await f.open(a.cookie)
   assert.deepEqual(b.current.data, { preserved: true })
@@ -143,7 +170,7 @@ test('legacy four-column session databases upgrade without losing data or identi
 test('session cookie scope survives rotation, renewal and deletion and invalid options do not write', async t => {
   const f = fixture(t)
   await assert.rejects(f.open('', { name: '__Host-bad' }), TypeError)
-  assert.equal(f.db.get("SELECT count(*) AS n FROM sqlite_master WHERE name='jin_sessions'").n, 0)
+  assert.equal(f.db.get("SELECT count(*) AS n FROM sqlite_master WHERE name='cow_sessions'").n, 0)
   for (const options of [{ expires: new Date() }, { maxAge: 0 }, { maxAge: Infinity }, { typo: 1 }, { path: '/;bad' }]) {
     await assert.rejects(f.open('', options), TypeError)
   }
@@ -165,7 +192,7 @@ test('failed serialization and failed rotation leave the prior record intact', a
     await assert.rejects(a.current.replace(value), TypeError)
   }
   const old = a.cookie
-  f.db.exec("CREATE TRIGGER fail_session_insert BEFORE INSERT ON jin_sessions BEGIN SELECT RAISE(ABORT, 'injected'); END")
+  f.db.exec("CREATE TRIGGER fail_session_insert BEFORE INSERT ON cow_sessions BEGIN SELECT RAISE(ABORT, 'injected'); END")
   await assert.rejects(a.current.replace({ user: 1 }), /injected/)
   assert.equal(a.cookie, old)
   a.current.update({ still: 'alive' })

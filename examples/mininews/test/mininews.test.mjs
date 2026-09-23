@@ -217,7 +217,7 @@ test('MiniNews login limit persists across restart and expired sessions cannot w
   assert.equal((await attacker.request(f.path+'?view=login',{action:'login',csrf:hidden(page,'csrf'),username:'editor',password})).status,429)
   assert.equal(f.db(db=>db.prepare('SELECT count(*) AS n FROM mn_attempts').get().n),1)
   assert.equal((await c.request(f.path+'?view=admin')).status,200)
-  f.db(db=>db.exec('UPDATE mn_attempts SET until_at=0; UPDATE jin_sessions SET expires_at=0'))
+  f.db(db=>db.exec('UPDATE mn_attempts SET until_at=0; UPDATE cow_sessions SET expires_at=0'))
   assert.equal((await c.request(f.path+'?view=admin',{action:'logout',csrf:hidden(desk,'csrf')})).status,303)
   await login(f,attacker)
   assert.equal(f.db(db=>db.prepare('SELECT count(*) AS n FROM mn_attempts').get().n),0)

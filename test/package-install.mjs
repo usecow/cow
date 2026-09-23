@@ -31,7 +31,7 @@ async function npmEntry() {
   throw new Error('Cannot locate npm. Run this test with npm run test:package.')
 }
 
-function client(address, cookiePrefix = 'jin_forum=') {
+function client(address, cookiePrefix = 'cow_forum=') {
   let cookie = ''
   return {
     get cookie() { return cookie },
