@@ -1,30 +1,24 @@
-# Cow upload example
+# Uploads
 
-A single page exercising multipart fields, request-owned uploads and explicit
-saving. No setup script or configuration file is needed.
+A single page that reads an uploaded file and, if you ask it to, saves a private
+copy.
 
-From a Cow checkout:
+## Run it
+
+From a clone of this repository, after `npm install` at the root:
 
 ```sh
-node ./bin/cow.mjs ./examples/uploads/site --port 8003
+npm start --prefix examples/uploads
 ```
 
-Open http://127.0.0.1:8003. The default action reads a file and reports its name
-and size without saving it. Checking **Keep a private copy** saves it under a
-generated `.bin` name in `examples/uploads/data/`, outside the served directory.
-That directory is created only when saving. Saved copies remain until you remove
-them; they are not request-temporary data. The per-file limit here is 256 KiB.
+Open <http://127.0.0.1:8000>, pick a file, and submit it. The page shows the
+file's name and size without saving it. To save it, check
+**Keep a private copy**. The page saves the file to `data/`, outside the served
+folder. Each file can be up to 256 KiB.
 
-With a local installation, copy `node_modules/@cowlang/cow/examples/uploads/site` into
-your own example directory, then run `cow ./your-example/site --port 8003`.
-The page imports `cow:web`, so keep it underneath your application's package
-installation. Saved copies go into `your-example/data/`, not `node_modules`.
+> **Warning:** This is a local learning example. Before you accept uploads from
+> other people, add sign-in and CSRF protection, and check each file's
+> contents. The browser supplies the file name and type, so don't trust them.
 
-This is a localhost learning example, not a public file-sharing application.
-Before accepting uploads from other users, decide who may save, add appropriate
-authentication/CSRF protection and validate content for its intended use. The
-browser-supplied name and media type are not evidence that a file is safe.
-Do not serve or execute uploaded content from this example.
-
-See the [upload API](../../docs/runtime-api.md#forms-and-file-uploads) for limits, error
-handling, request lifetime and the buffered-memory implementation's boundaries.
+See [forms and file uploads](../../docs/runtime-api.md#forms-and-file-uploads)
+for the API and its limits.
