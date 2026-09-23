@@ -2,7 +2,7 @@
   "name": "cow-language",
   "displayName": "Cow Language",
   "description": "Cow page syntax, snippets and page API suggestions, including JSP/TSP modes. No site execution or build step.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "cow-local",
   "license": "MIT",
   "engines": { "vscode": "^1.80.0" },
