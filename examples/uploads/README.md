@@ -1,24 +1,26 @@
 # Uploads
 
-A single page that reads an uploaded file and, if you ask it to, saves a private
-copy.
+Reads an uploaded file, and saves a private copy if you ask it to.
 
-## Run it
+## Installation
 
-From a clone of this repository, after `npm install` at the root:
+Create a project, install Cow, and copy the example into it:
 
 ```sh
-npm start --prefix examples/uploads
+mkdir my-uploads
+cd my-uploads
+npm install @cowlang/cow
+cp -r node_modules/@cowlang/cow/examples/uploads/site site
 ```
 
-Open <http://127.0.0.1:8000>, pick a file, and submit it. The page shows the
-file's name and size without saving it. To save it, check
-**Keep a private copy**. The page saves the file to `data/`, outside the served
-folder. Each file can be up to 256 KiB.
+Start Cow:
 
-> **Warning:** This is a local learning example. Before you accept uploads from
-> other people, add sign-in and CSRF protection, and check each file's
-> contents. The browser supplies the file name and type, so don't trust them.
+```sh
+npx @cowlang/cow site
+```
 
-See [forms and file uploads](../../docs/runtime-api.md#forms-and-file-uploads)
-for the API and its limits.
+Open <http://127.0.0.1:8000>. Saved files go in `data/`, beside `site/`.
+
+> **Warning:** Before accepting uploads from other people, add sign-in and CSRF
+> protection, and check file contents. Don't trust the name or type the browser
+> sends.

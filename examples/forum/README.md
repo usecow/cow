@@ -1,59 +1,47 @@
 # Cow Commons
 
-Cow Commons is a small forum built from ordinary Cow pages and SQLite. Members
-can register, start topics, reply, and edit their own posts. An administrator
-can lock topics and remove posts.
+A small forum built with Cow and SQLite.
 
-It's an example of a real app, not a forum you should deploy as-is.
+## Installation
 
-## Run it
-
-From a clone of this repository, after `npm install` at the root:
+Create a project, install Cow, and copy the forum into it:
 
 ```sh
-npm start --prefix examples/forum
-```
-
-It prints a setup key. Open <http://127.0.0.1:8002/install>, enter the key, and
-create the administrator account.
-
-To run it from an installed copy of Cow, copy `site/` and `setup.mjs` from
-`node_modules/@cowlang/cow/examples/forum/` into your project, then run:
-
-```sh
+mkdir my-forum
+cd my-forum
+npm install @cowlang/cow
+cp -r node_modules/@cowlang/cow/examples/forum/site site
+cp node_modules/@cowlang/cow/examples/forum/setup.mjs .
 node setup.mjs
-npx cow site --port 8002 --workers 2
 ```
 
-The forum keeps its database in `data/forum.sqlite`, next to `site/` and outside
-the served folder.
+Start Cow:
 
-## How it fits together
+```sh
+npx @cowlang/cow site --port 8002 --workers 2
+```
 
-- `site/_config.cow`: the forum name, page size, and whether registration is
-  open.
-- `site/_db.cow`: the schema and the database handle.
-- `site/_auth.cow`: accounts, sessions, and sign-in.
-- `site/_forum.cow`: topics, replies, and moderation.
-- `site/index.cow`, `topic.cow`, `new.cow`, `edit.cow`, and `moderate.cow`: the
-  pages.
+Open <http://127.0.0.1:8002/install> and enter the setup key that `setup.mjs`
+printed. The database goes in `data/`, beside `site/`.
+
+## Files
+
+- `site/_config.cow`: forum settings
+- `site/_db.cow`: schema
+- `site/_auth.cow`: accounts and sessions
+- `site/_forum.cow`: topics, replies, and moderation
 
 ## Before you go live
 
-Cow Commons leaves out email, account recovery, spam protection, rate limits,
-and schema upgrades. Plan for those first. Then:
-
-- Serve the whole site over HTTPS, and set `COW_FORUM_SECURE_COOKIES=1`.
+- Serve it over HTTPS and set `COW_FORUM_SECURE_COOKIES=1`.
 - Set `registrationOpen: false` in `site/_config.cow` to close sign-ups.
-- Back up with SQLite's backup tools, or stop Cow before copying the database
-  and its WAL file.
+- Add what it leaves out: email, account recovery, spam protection, and rate
+  limits.
 
 ## Tests
+
+From the repository root:
 
 ```sh
 npm test --prefix examples/forum
 ```
-
-To try it in a browser without touching your data, run
-`npm run preview --prefix examples/forum`. It uses a temporary database and
-removes it when you stop the server.

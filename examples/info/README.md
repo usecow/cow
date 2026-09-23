@@ -1,34 +1,20 @@
 # Runtime information
 
-Like PHP's `phpinfo()`, `cow.info()` shows a page about the Cow server that's
-running it. Save this as `info.cow` in your site:
+`cow.info()` shows a page about the running Cow server, like PHP's `phpinfo()`.
 
 ```jsp
 <?js cow.info() ?>
 ```
 
-Then visit `/info`. For JSON, call `cow.info({ format: 'json' })` instead.
+## Installation
 
-## Run it
-
-From a clone of this repository, after `npm install` at the root:
+Save the line above as `info.cow` in your site, then start Cow:
 
 ```sh
-npm start --prefix examples/info
+npx @cowlang/cow my-site
 ```
 
-Open <http://127.0.0.1:8004>.
+Open <http://127.0.0.1:8000/info>.
 
-## What it shows
-
-The page lists the versions of Cow, Node.js, V8, TypeScript, and SQLite, the
-platform, Cow's limits and cache settings, and request and worker counts. It
-never shows environment variables, file paths, request data, cookies, or
-hostnames.
-
-> **Warning:** The page still reveals versions and limits. Protect it with your
-> own sign-in check, or delete it when you're done. Cow never adds this page to
-> a site on its own.
-
-For health checks across the whole server, use the `/_cow/status` endpoint
-described in [server operations](../../docs/operations.md).
+> **Warning:** The page reveals versions and limits. Protect it, or delete it
+> when you're done.
