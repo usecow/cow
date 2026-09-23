@@ -31,10 +31,9 @@ checking.
 
 ## Create your first page
 
-The commands in this section target published releases of **`@cowlang/cow`**.
-Until the first publication, use
-[a local archive](#install-locally-without-publishing). You do not need an npm
-account to install a public package.
+The commands in this section install **`@cowlang/cow`** from npm. While the
+package is private, first run `npm login` with an account in the `@cowlang`
+organization, or use [a local archive](#install-locally-without-publishing).
 
 1. Create a folder called `my-site`.
 

@@ -61,7 +61,7 @@ Learn more about writing pages [in the docs](docs/templates.md).
 - **[Examples](examples)**: a news site, a forum, file uploads, and a
   diagnostics page.
 
-Cow is at version 0.0.1, so expect its APIs to change.
+Cow hasn't reached 1.0 yet, so expect its APIs to change.
 
 ## Contributing
 
