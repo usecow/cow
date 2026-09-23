@@ -20,7 +20,7 @@ test('Cow package identity, lockfile, scoped exports and executable agree', asyn
   assert.equal(lock.packages[''].name, manifest.name)
   assert.equal(lock.version, manifest.version)
   assert.equal(lock.packages[''].version, manifest.version)
-  assert.deepEqual(manifest.bin, { cow: './bin/cow.mjs' })
+  assert.deepEqual(manifest.bin, { cow: 'bin/cow.mjs' })
   assert.deepEqual(lock.packages[''].bin, { cow: 'bin/cow.mjs' })
   for (const value of [CowApp, CowCompileError, CowSQLiteError, startCow]) assert.equal(typeof value, 'function')
   for (const subpath of ['web', 'sqlite', 'resource', 'csv', 'runtime']) await import('@cowlang/cow/' + subpath)
