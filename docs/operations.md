@@ -154,6 +154,13 @@ The budgets leave out the following:
 - On Node.js and Nub, `--memory-limit` only limits V8's worker old-generation
   heap. It does **not** limit Buffers, native allocations, npm libraries, or
   the HTTP process.
+- Node.js does not free the memory of a request's JavaScript context, so each
+  request leaves a few hundred KiB in the worker's old generation. On Node.js
+  and Nub, Cow replaces a worker after a request once its old generation passes
+  60% of `--memory-limit`, before it can run out of memory. At the default
+  256 MB this happens every few hundred requests, independently of
+  `--max-requests`. `/_cow/status` reports each worker's `heapUsed` and
+  `heapLimit` in bytes.
 - Bun and Deno reject `--memory-limit` instead of silently ignoring it.
 - `JSON.stringify()`, strings created before writing, caches, and application
   allocations can exceed output accounting.

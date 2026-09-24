@@ -11,6 +11,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { spawn } from 'node:child_process'
 import { test } from 'node:test'
 import { CowApp } from '../lib/app.mjs'
+import { hostRuntime } from '../lib/host-runtime.mjs'
 
 async function fixture(t, options = {}) {
   // Cow opens real paths; Windows temp folders can be 8.3 short names.
@@ -300,4 +301,22 @@ test('teardown still cancels an unconsumed fetch response body', async (t) => {
   assert.equal(await (await fetch(address)).text(), 'done')
   await entered
   await waitFor(() => closed)
+})
+
+test('a worker is replaced before per-request vm memory reaches its heap limit', { skip: hostRuntime().workerHeapLimit ? false : 'this runtime does not enforce a worker heap limit' }, async t => {
+  // Node never frees a vm context that has held a SourceTextModule, so every
+  // request leaves memory behind. Request-count recycling is off here, so
+  // only the heap check can replace the worker.
+  const f = await fixture(t, { memoryLimitMb: 96, maxRequestsPerWorker: 0 })
+  await f.write('index.cow', '<?js const rows = Array.from({ length: 50000 }, (_, n) => ({ n, label: "row " + n })) ?><?= rows.length ?>')
+  await f.app.initialize()
+  const runtime = () => f.app.status().application.runtime
+  let requests = 0
+  while (runtime().workersRecycled === 0 && requests < 2000) {
+    const result = await f.app.execute({ url: '/' })
+    assert.equal(result.response.status, 200)
+    requests++
+  }
+  assert.ok(runtime().workersRecycled >= 1, `no worker was replaced after ${requests} requests`)
+  assert.match(JSON.stringify(runtime()), /"heapLimit":100663296/, 'workers report their old generation limit')
 })
