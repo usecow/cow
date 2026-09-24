@@ -25,6 +25,8 @@ export interface SQLite {
   commit(): this
   rollback(): this
   transaction<T>(callback: (database: SQLite) => T | Promise<T>, options?: { mode?: 'deferred' | 'immediate' | 'exclusive' }): Promise<T>
+  /** Runs each step once, in order, recorded in PRAGMA user_version. Resolves to the number of steps applied. */
+  migrate(steps: ReadonlyArray<string | ((database: SQLite) => void | Promise<void>)>): Promise<number>
 }
 export class CowSQLiteError extends Error {
   constructor(message: string, code: string, cause?: unknown)

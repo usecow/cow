@@ -49,7 +49,50 @@ The leading underscore keeps the helper private, so visitors cannot request
 it. Import it from any page and use the request-scoped handle directly. You do
 not register the database anywhere else.
 
-## Insert rows from a form
+## Change the schema with migrations
+
+To change the schema after your application has data, list the changes as
+migration steps and call `db.migrate()`. Each step runs once, in order.
+SQLite's `PRAGMA user_version` records how many steps have run. Save this as
+`_db.cow`:
+
+```js
+<?js
+import { sqlite } from 'cow:sqlite'
+
+const db = await sqlite(
+  new URL('../data/application.sqlite', import.meta.url)
+)
+
+await db.migrate([
+  `CREATE TABLE herd (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+  )`,
+  "ALTER TABLE herd ADD COLUMN notes TEXT NOT NULL DEFAULT ''",
+  (db) => {
+    db.run('UPDATE herd SET notes = ? WHERE notes = ?', ['New arrival', ''])
+  }
+])
+
+export default db
+```
+
+A step is a SQL string or a function that receives the database. When you need
+another change, add a step to the end of the list.
+
+- Cow runs every pending step in one immediate transaction. If a step fails,
+  the whole batch rolls back and `user_version` stays where it was.
+- When no step is pending, `migrate()` only reads `user_version`, so a helper
+  can call it on every request.
+- `migrate()` resolves to the number of steps applied.
+
+> **Warning:** Never edit, reorder, or remove a step that has run. Cow counts
+> steps, so a changed step does not run again on an existing database. When the
+> database has more steps applied than the list contains, `migrate()` fails
+> with `COW_SQLITE_MIGRATION_AHEAD` instead of running older code against a
+> newer schema.
+
 
 To save a form submission, read the body with `form(req)`, read each value
 with `field()`, and pass the values to `db.run()` as bound parameters. Save
@@ -166,6 +209,7 @@ which matches no row.
 | `db.run(sql, parameters)` | Runs one statement that changes data. | An object with `changes` and `lastInsertRowid`. |
 | `db.get(sql, parameters)` | Reads one row. | The row, or `undefined` when no row matches. |
 | `db.all(sql, parameters)` | Reads every row. `db.query()` is an alias. | An array of rows. |
+| `db.migrate(steps)` | Runs each pending [migration step](#change-the-schema-with-migrations) once, in order. | A promise of the number of steps applied. |
 
 Parameters can be:
 

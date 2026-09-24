@@ -244,3 +244,37 @@ test('managed transactions reject premature commits and concurrent use before it
     assert.deepEqual(db.all('SELECT value FROM events'), [{ value: 'held' }])
   })
 })
+
+test('migrate() runs each step once, in order, and records progress in user_version', async () => {
+  const filename = join(temporaryRoot, 'migrations.sqlite')
+  const steps = [
+    'CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT NOT NULL)',
+    'ALTER TABLE posts ADD COLUMN cover TEXT'
+  ]
+  await request(async () => {
+    const db = await sqlite(filename)
+    assert.equal(await db.migrate(steps), 2)
+    assert.equal(db.get('PRAGMA user_version').user_version, 2)
+    // Running again is a no-op; re-running the ALTER would fail.
+    assert.equal(await db.migrate(steps), 2)
+  })
+  await request(async () => {
+    const db = await sqlite(filename)
+    let ran = 0
+    const more = [...steps, async (database) => { ran++; database.run('INSERT INTO posts (title) VALUES (?)', ['Hello']) }]
+    assert.equal(await db.migrate(more), 3)
+    assert.equal(await db.migrate(more), 3)
+    assert.equal(ran, 1)
+    assert.equal(db.get('SELECT title FROM posts').title, 'Hello')
+
+    // A failing step rolls back every pending step and leaves the version.
+    await assert.rejects(db.migrate([...more, 'ALTER TABLE posts ADD COLUMN slug TEXT', 'NOT VALID SQL']))
+    assert.equal(db.get('PRAGMA user_version').user_version, 3)
+    assert.equal(db.all('PRAGMA table_info(posts)').some((column) => column.name === 'slug'), false)
+    assert.equal(db.inTransaction, false)
+
+    // Older code refuses a database that newer code already migrated.
+    await assert.rejects(db.migrate(steps), { code: 'COW_SQLITE_MIGRATION_AHEAD' })
+    await assert.rejects(db.migrate('CREATE TABLE x (id)'), { code: 'COW_SQLITE_MIGRATION_INVALID' })
+  })
+})
