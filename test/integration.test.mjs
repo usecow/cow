@@ -145,6 +145,37 @@ test('serves static files and directory index pages', async () => {
   assert.equal(await nested.text(), 'Nested route\n')
 })
 
+test('static files carry validators and answer unchanged re-checks with 304', async () => {
+  const file = join(temporaryRoot, 'cache.css')
+  await writeFile(file, 'a { color: green }\n')
+  const first = await fetch(`${baseUrl}/cache.css`)
+  assert.equal(first.status, 200)
+  assert.equal(first.headers.get('cache-control'), 'no-cache')
+  const etag = first.headers.get('etag'), lastModified = first.headers.get('last-modified')
+  assert.match(etag, /^W\/"[0-9a-f]+-[0-9a-f]+"$/)
+  assert.ok(Number.isFinite(Date.parse(lastModified)))
+  await first.text()
+
+  for (const headers of [{ 'if-none-match': etag }, { 'if-none-match': `"other", ${etag.slice(2)}` }, { 'if-modified-since': lastModified }]) {
+    const again = await fetch(`${baseUrl}/cache.css`, { headers })
+    assert.equal(again.status, 304, JSON.stringify(headers))
+    assert.equal(again.headers.get('etag'), etag)
+    assert.equal(await again.text(), '')
+  }
+  const head = await fetch(`${baseUrl}/cache.css`, { method: 'HEAD', headers: { 'if-none-match': etag } })
+  assert.equal(head.status, 304)
+  // If-None-Match wins over If-Modified-Since, as HTTP requires.
+  const mismatch = await fetch(`${baseUrl}/cache.css`, { headers: { 'if-none-match': '"stale"', 'if-modified-since': lastModified } })
+  assert.equal(mismatch.status, 200)
+  assert.equal(await mismatch.text(), 'a { color: green }\n')
+
+  await writeFile(file, 'a { color: darkgreen }\n')
+  const edited = await fetch(`${baseUrl}/cache.css`, { headers: { 'if-none-match': etag } })
+  assert.equal(edited.status, 200)
+  assert.notEqual(edited.headers.get('etag'), etag)
+  assert.equal(await edited.text(), 'a { color: darkgreen }\n')
+})
+
 test('handles HEAD without sending a response body', async () => {
   const response = await fetch(`${baseUrl}/?name=Cow`, { method: 'HEAD' })
   assert.equal(response.status, 200)

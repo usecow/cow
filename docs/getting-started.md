@@ -317,6 +317,12 @@ Static files use a limited public-extension allowlist: CSS, HTML, images,
 fonts, text, XML, and PDF. Browser `.js`, `.mjs`, and `.json` files must live
 inside `assets/`.
 
+Cow sends static files with `ETag`, `Last-Modified`, and
+`Cache-Control: no-cache`, as Apache and nginx send validators. The browser
+re-checks each file on every load, and Cow answers `304 Not Modified` when the
+file has not changed, so an edited stylesheet or script shows on the next
+refresh.
+
 > **Warning:** Everything in `assets/` is intentionally public if its
 > extension is allowed. Never put server modules or secrets there.
 
