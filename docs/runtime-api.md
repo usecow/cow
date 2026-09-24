@@ -31,8 +31,9 @@ Longer topics have their own sections:
 
 | Signature | Description | Returns |
 | --- | --- | --- |
-| `echo(...values)` | Appends values to the response body. Cow converts each value with `String()` and joins multiple values with one space. `null` and `undefined` append nothing, as in PHP. | Nothing. |
-| `h(value)` | Escapes a value for HTML text and quoted attribute values. | The escaped string. `null` and `undefined` return an empty string. |
+| `echo(...values)` | Appends values to the response body without escaping. Cow converts each value with `String()` and joins multiple values with one space. `null` and `undefined` append nothing, as in PHP. | Nothing. |
+| `h(value)` | Escapes a value for HTML text and quoted attribute values. `<?= ?>` prints the result as-is, so it is escaped once. | The escaped string. `null` and `undefined` return an empty string. |
+| `raw(value)` | Marks trusted HTML so that `<?= ?>` prints it without escaping. See [print trusted HTML](templates.md#print-trusted-html). | The same string. `null` and `undefined` return an empty string. |
 | `include(path, locals)` | Renders a local `.cow`, `.jsp`, or `.tsp` file into the same response. See [reuse markup with includes](templates.md#reuse-markup-with-includes). | A promise. Await it. |
 | `die()` | Stops the page. Cow still sends the output that the page has buffered. | Does not return. |
 
@@ -42,7 +43,8 @@ A page also receives `locals` (the values passed to `include()`),
 ### `h(value)`
 
 Escapes `&`, `<`, `>`, `"`, and `'`, so the result is safe in HTML text and
-inside a quoted attribute value.
+inside a quoted attribute value. `<?= ?>` already escapes what it prints, so
+use `h()` when you build HTML in code, for example inside `raw()`.
 
 Save this as `escape.cow`:
 

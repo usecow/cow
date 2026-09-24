@@ -464,17 +464,17 @@ if (embedded) {
 </div>
 <?js } else { ?>
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= h(siteTitle) ?></title><style><?= css ?></style></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= h(siteTitle) ?></title><style><?= raw(css) ?></style></head>
 <body><a class="skip-link" href="#main-content">Skip to content</a><main>
 <header class="masthead"><div class="brand"><span class="monogram" aria-hidden="true">m</span><div><h1><?= h(siteTitle) ?></h1><p>A small news editor for your website.</p></div></div><div class="edition"><p class="eyebrow">A simple news desk</p><span><?= h(new Date().toISOString().slice(0, 10)) ?> · UTC</span></div></header>
 <nav class="tabs" aria-label="News navigation">
 <?js if (current?.data.userId === 1) { ?>
 <?js for (const [key, label] of [['dashboard','Dashboard'],['new','Add news'],['admin','Edit news'],['help','Help / About']]) { ?>
-<a href="<?= h(link({view:key})) ?>"<?= (view === key || (key === 'admin' && ['edit','delete'].includes(view))) ? ' aria-current="page"' : '' ?>><?= label ?></a>
+<a href="<?= h(link({view:key})) ?>"<?= (view === key || (key === 'admin' && ['edit','delete'].includes(view))) ? raw(' aria-current="page"') : '' ?>><?= label ?></a>
 <?js } ?>
 <a class="site-link" href="<?= h(link()) ?>">View news</a>
 <form method="post" action="<?= h(link({view:'admin'})) ?>"><input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>"><button name="action" value="logout">Log out</button></form>
-<?js } else { ?><a href="<?= h(link()) ?>"<?= view === 'news' ? ' aria-current="page"' : '' ?>>View news</a><?js if (account) { ?><a class="site-link" href="<?= h(link({view:'login'})) ?>"<?= view === 'login' ? ' aria-current="page"' : '' ?>>Editor login</a><?js } } ?>
+<?js } else { ?><a href="<?= h(link()) ?>"<?= view === 'news' ? raw(' aria-current="page"') : '' ?>>View news</a><?js if (account) { ?><a class="site-link" href="<?= h(link({view:'login'})) ?>"<?= view === 'login' ? raw(' aria-current="page"') : '' ?>>Editor login</a><?js } } ?>
 </nav>
 <div class="content" id="main-content" tabindex="-1">
 <?js if (error) { ?><p class="error" role="alert"><?= h(error) ?></p><?js } ?>
@@ -498,7 +498,7 @@ if (embedded) {
 <div class="shortcuts"><a href="<?= h(link({view:'new'})) ?>"><strong>Add a story</strong><span>Write a draft or publish an update.</span></a><a href="<?= h(link({view:'admin'})) ?>"><strong>Edit your news</strong><span>Find drafts and published stories.</span></a><a href="<?= h(link({view:'help'})) ?>"><strong>Put news on your site</strong><span>Include news in your own layout.</span></a></div>
 <div class="section-label"><h3>Recently updated</h3><a href="<?= h(link({view:'admin'})) ?>">All stories</a></div>
 <?js if (!entries.length) { ?><p class="empty">No stories yet. Add your first news item when you are ready.</p><?js } else { ?>
-<div class="table-wrap"><table aria-label="Recently updated stories"><thead><tr><th scope="col">Story</th><th scope="col">Status</th><th scope="col">Updated (UTC)</th></tr></thead><tbody><?js for (const post of entries) { ?><tr><td><a class="title-link" href="<?= h(link({view:'edit',id:String(post.id)})) ?>"><?= h(post.title) ?></a></td><td class="state"><?= badge(post) ?></td><td class="table-date"><?= h(date(post.updated_at)) ?></td></tr><?js } ?></tbody></table></div>
+<div class="table-wrap"><table aria-label="Recently updated stories"><thead><tr><th scope="col">Story</th><th scope="col">Status</th><th scope="col">Updated (UTC)</th></tr></thead><tbody><?js for (const post of entries) { ?><tr><td><a class="title-link" href="<?= h(link({view:'edit',id:String(post.id)})) ?>"><?= h(post.title) ?></a></td><td class="state"><?= raw(badge(post)) ?></td><td class="table-date"><?= h(date(post.updated_at)) ?></td></tr><?js } ?></tbody></table></div>
 <?js } ?>
 <?js } else if (view === 'help') { ?>
 <div class="section-head"><div><p class="eyebrow">A small field guide</p><h2>Using MiniNews</h2><p>Writing, publishing and adding news to your website.</p></div></div>
@@ -512,18 +512,18 @@ if (embedded) {
 <form class="search" method="get" action="<?= h(base) ?>"><input type="hidden" name="view" value="admin"><label for="q">Find by title<input id="q" type="text" name="q" value="<?= h(query) ?>" maxlength="100"></label><button>Find</button><a href="<?= h(link({view:'admin'})) ?>">Show all</a></form>
 <div class="table-wrap"><table aria-label="All news stories"><thead><tr><th scope="col">Title</th><th scope="col">Status</th><th scope="col">Updated (UTC)</th><th scope="col">Actions</th></tr></thead><tbody>
 <?js if (!entries.length) { ?><tr><td colspan="4">No news items found. <a href="<?= h(link({view:'new'})) ?>">Add news</a>.</td></tr><?js } ?>
-<?js for (const post of entries) { ?><tr><td><a class="title-link" href="<?= h(link({view:'edit',id:String(post.id)})) ?>"><?= h(post.title) ?></a></td><td class="state"><?= badge(post) ?></td><td class="table-date"><?= h(date(post.updated_at)) ?></td><td class="row-actions"><a href="<?= h(link({view:'edit',id:String(post.id)})) ?>">Edit</a><a class="danger" href="<?= h(link({view:'delete',id:String(post.id)})) ?>">Delete</a></td></tr><?js } ?>
+<?js for (const post of entries) { ?><tr><td><a class="title-link" href="<?= h(link({view:'edit',id:String(post.id)})) ?>"><?= h(post.title) ?></a></td><td class="state"><?= raw(badge(post)) ?></td><td class="table-date"><?= h(date(post.updated_at)) ?></td><td class="row-actions"><a href="<?= h(link({view:'edit',id:String(post.id)})) ?>">Edit</a><a class="danger" href="<?= h(link({view:'delete',id:String(post.id)})) ?>">Delete</a></td></tr><?js } ?>
 </tbody></table></div>
 <details><summary>Show news on another Cow page</summary><p>Use this include before or after your own HTML:</p><pre><code><?= h(includeCode) ?></code></pre><p class="help">The include outputs only published news, without the editor or a page layout. Adjust the include path if your page is in a different folder.</p></details>
 <?js } else if (view === 'new' || view === 'edit') { ?>
 <div class="section-head"><div><p class="eyebrow">The writing desk</p><h2><?= view === 'new' ? 'Add news' : 'Edit news' ?></h2><p><?= view === 'new' ? 'Write in Markdown, preview, then publish when you are ready.' : 'Edit your story below. Nothing changes until you save.' ?></p></div><span class="status<?= entry.state === 'draft' ? ' draft' : '' ?>"><?= entry.state === 'draft' ? 'Draft' : 'Published' ?></span></div>
 <?js if (req.get('saved') === '1' && !error && !preview) { ?><p class="notice" role="status">News saved. <?= entry.state === 'draft' ? 'This draft is only visible to you.' : 'This story is visible on your website.' ?></p><?js } ?>
-<?js if (preview) { ?><section class="preview"><h2>Preview — not saved</h2><h3><?= h(entry.title) ?></h3><?js if (entry.summary) { ?><p class="preview-label">Short story / listing</p><div class="news-text"><?= markdown(entry.summary) ?></div><p class="preview-label">Full story</p><?js } ?><div class="news-text"><?= markdown(entry.body) ?></div><a class="preview-return" href="#title">Return to editing</a></section><?js } ?>
+<?js if (preview) { ?><section class="preview"><h2>Preview — not saved</h2><h3><?= h(entry.title) ?></h3><?js if (entry.summary) { ?><p class="preview-label">Short story / listing</p><div class="news-text"><?= raw(markdown(entry.summary)) ?></div><p class="preview-label">Full story</p><?js } ?><div class="news-text"><?= raw(markdown(entry.body)) ?></div><a class="preview-return" href="#title">Return to editing</a></section><?js } ?>
 <form method="post" action="<?= h(link(view === 'new' ? {view} : {view,id:String(entry.id)})) ?>">
 <input type="hidden" name="csrf" value="<?= h(current.csrfToken) ?>"><input type="hidden" name="version" value="<?= entry.version || '' ?>"><input type="hidden" name="creationKey" value="<?= h(creationKey) ?>">
 <label for="title">Article title</label><input id="title" type="text" name="title" value="<?= h(entry.title) ?>" required maxlength="160">
-<div class="story-section"><label for="summary">Short story <span class="help">— optional</span></label><?= toolbar('summary') ?><textarea id="summary" name="summary" rows="3" maxlength="500" aria-describedby="short-help"><?= h(entry.summary) ?></textarea><p class="help" id="short-help">A small introduction for the news list. Leave blank to use an excerpt.</p></div>
-<div class="story-section"><label for="body">Full story <span class="help">— Markdown</span></label><?= toolbar('body') ?><textarea id="body" name="body" rows="11" required maxlength="20000" aria-describedby="markdown-help"><?= h(entry.body) ?></textarea></div>
+<div class="story-section"><label for="summary">Short story <span class="help">— optional</span></label><?= raw(toolbar('summary')) ?><textarea id="summary" name="summary" rows="3" maxlength="500" aria-describedby="short-help"><?= h(entry.summary) ?></textarea><p class="help" id="short-help">A small introduction for the news list. Leave blank to use an excerpt.</p></div>
+<div class="story-section"><label for="body">Full story <span class="help">— Markdown</span></label><?= raw(toolbar('body')) ?><textarea id="body" name="body" rows="11" required maxlength="20000" aria-describedby="markdown-help"><?= h(entry.body) ?></textarea></div>
 <p class="editor-note" id="editor-message" role="status" aria-live="polite">Preview checks the formatting without saving your changes.</p>
 <details id="markdown-help"><summary>Formatting help</summary><p><code>**bold**</code>, <code>*italic*</code>, <code>[link](https://example.com)</code>, <code>`inline code`</code></p><p>Start a line with <code># Heading</code>, <code>- list item</code>, <code>1. numbered item</code> or <code>&gt; quote</code>. Surround a code block with three backticks on their own lines. Blank lines separate paragraphs.</p><p class="help">A small Markdown subset: raw HTML, images, tables and nested lists are not supported. Nothing in your article runs as code.</p></details>
 <div class="publishing"><label for="state">Publication</label><select id="state" name="state" aria-describedby="publication-help"><option value="draft"<?= entry.state === 'draft' ? ' selected' : '' ?>>Draft</option><option value="published"<?= entry.state === 'published' ? ' selected' : '' ?>>Published</option></select><span class="help" id="publication-help">On save: Draft keeps it private; Published makes it public.</span></div>
@@ -542,6 +542,6 @@ if (embedded) {
 </div>
 <footer><span>MiniNews / Made with Cow</span><span>Single-file publishing · All dates in UTC</span></footer>
 </main>
-<?js if (view === 'new' || view === 'edit') { ?><script><?= editorScript ?></script><?js } ?>
+<?js if (view === 'new' || view === 'edit') { ?><script><?= raw(editorScript) ?></script><?js } ?>
 </body></html>
 <?js } ?>

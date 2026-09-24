@@ -111,3 +111,29 @@ test('Cow lexer expression and cross-block fixes work in requests, includes and 
   await f.put('index.cow', '<?= {valueOf(){return 10}} / 2 ?>\r\n<?js\r\nthrow new Error("lexer source location");')
   await assert.rejects(f.app.execute({ url: '/' }), error => error.stack.includes(`index.cow:3:${globalThis.Bun ? 16 : 7}`))
 })
+
+test('<?= ?> escapes by default; h(), raw() and highlight() output prints as-is', async t => {
+  const f = await fixture(t)
+  const highlightURL = new URL('../lib/highlight.mjs', import.meta.url).href
+  await f.put('_markup.cow', `<?js
+import { escapeHtml, raw } from 'cow:web'
+export const badge = (label) => raw('<b>' + escapeHtml(label) + '</b>')
+export const plain = (label) => '<b>' + label + '</b>'
+`)
+  await f.put('index.cow', `<?js
+import { highlight } from ${JSON.stringify(highlightURL)}
+import { badge, plain } from './_markup.cow'
+const input = req.get('q')
+?><p><?= input ?></p><p><?= h(input) ?></p><p><?= raw('<i>trusted</i>') ?></p><p><?= '<i>' + h(input) ?></p><p><?= badge(input) ?></p><p><?= plain('x') ?></p><?= highlight('const n = 1', { code: true }) ?>[<?= null ?><?= undefined ?>]<?js echo('<hr>') ?>`)
+  await f.put('echo.cow', `<?= req.get('q') ?>`)
+  const body = await (await f.get('/?q=%3Cscript%3E')).text()
+  assert.match(body, /^<p>&lt;script&gt;<\/p><p>&lt;script&gt;<\/p>/, 'plain values and h() print escaped once')
+  assert.match(body, /<p><i>trusted<\/i><\/p>/, 'raw() prints as-is')
+  assert.match(body, /<p>&lt;i&gt;&amp;lt;script&amp;gt;<\/p>/, 'a string built from h() output is escaped again')
+  assert.match(body, /<p><b>&lt;script&gt;<\/b><\/p>/, 'raw() from a helper module is trusted')
+  assert.match(body, /<p>&lt;b&gt;x&lt;\/b&gt;<\/p>/, 'HTML a helper returns without raw() is escaped')
+  assert.match(body, /<span class="cow-/, 'highlight() output prints as-is')
+  assert.match(body, /\[\]<hr>$/, 'null and undefined print nothing; echo() stays unescaped')
+  // Trust is per request: a string raw() returned earlier is escaped later.
+  assert.equal(await (await f.get('/echo?q=' + encodeURIComponent('<i>trusted</i>'))).text(), '&lt;i&gt;trusted&lt;/i&gt;')
+})

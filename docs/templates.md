@@ -92,18 +92,19 @@ Rendered pages do not declare exports. Put reusable exports in
 
 ## Print values
 
-`<?= value ?>` prints one expression. It tolerates a trailing semicolon, so the
-PHP reflex `<?= title; ?>` works. `null` and `undefined` print nothing, as in
-PHP. Cow converts every other value with `String()`.
+`<?= value ?>` prints one expression and escapes it for HTML text and quoted
+attribute values. Text from a visitor, a database, or another service is safe
+to print as it is. It tolerates a trailing semicolon, so the PHP reflex
+`<?= title; ?>` works. `null` and `undefined` print nothing, as in PHP. Cow
+converts every other value with `String()`.
 
-> **Warning:** `<?= ?>` prints raw output. To print anything that came from a
-> visitor, a database, or another service, wrap it in `h()`:
-> `<?= h(name) ?>`. `h(value)` escapes HTML text and quoted attribute values.
+> **Note:** Unlike PHP, `<?= ?>` escapes. `<?= h(value) ?>` still works and
+> escapes the value once.
 
 Save this as `search.cow`:
 
 ```jsp
-<p>You searched for <?= h(req.get('q')) ?>.</p>
+<p>You searched for <?= req.get('q') ?>.</p>
 ```
 
 Open `/search?q=<b>hay</b>`.
@@ -113,6 +114,36 @@ Output:
 ```html
 <p>You searched for &lt;b&gt;hay&lt;/b&gt;.</p>
 ```
+
+### Print trusted HTML
+
+To print HTML that your own code built, wrap it in `raw()`. Save this as
+`status.cow`:
+
+```jsp
+<?js const label = req.get('label') ?? 'Open' ?>
+<p>Status: <?= raw('<strong>' + h(label) + '</strong>') ?></p>
+```
+
+Open `/status?label=<i>Closed</i>`.
+
+Output, with blank lines removed:
+
+```html
+<p>Status: <strong>&lt;i&gt;Closed&lt;/i&gt;</strong></p>
+```
+
+Cow trusts the exact string that `h()` or `raw()` returned during the
+current request. A new string built from it is escaped again, so
+`<?= '<strong>' + h(label) + '</strong>' ?>` prints the tags as text. Wrap the
+whole string in `raw()` instead. A helper can return trusted HTML too, with
+`import { raw } from 'cow:web'`.
+
+`echo()` writes its values without escaping, as in PHP.
+
+> **Warning:** Pass only HTML that you built to `raw()`. Escape any text from
+> a visitor, a database, or another service inside it with `h()` first, as
+> `status.cow` does.
 
 ## Reuse markup with includes
 

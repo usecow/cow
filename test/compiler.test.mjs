@@ -100,7 +100,7 @@ test('block-heavy templates preserve all blocks and source-map copy boundaries',
   const source = '<?js if(true) { ?>' + 'html<?= 1 ?>'.repeat(count) + '<?js } ?>'
   const result = compileSource(source, { filePath: 'many.jsp', language: 'js' })
   assert.equal((result.match(/echo\("html"\)/g) || []).length, count)
-  assert.equal((result.match(/echo\(String\(\(1\) \?\? ""\)\)/g) || []).length, count)
+  assert.equal((result.match(/echo\(__print\(\(1\)\)\)/g) || []).length, count)
 })
 
 test('malformed lexical values and missing echo terminators fail with original locations', () => {

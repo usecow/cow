@@ -6,7 +6,9 @@ async function render(source, filePath = 'lexer.cow') {
   const code = compileSource(source, { filePath })
   const module = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'))
   let output = ''
-  await module.default({ echo(value) { output += value } })
+  // These tests check lexing, so <?= ?> prints values unescaped here; the
+  // escaping default is covered by the page tests.
+  await module.default({ echo(value) { output += value }, __print: value => value == null ? '' : String(value) })
   return output
 }
 

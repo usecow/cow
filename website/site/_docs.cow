@@ -215,14 +215,14 @@ export const docs = [
         "title": "Print values",
         "blocks": [
           {
-            "html": "<code>&lt;?= expression ?&gt;</code> writes a value to the response."
+            "html": "<code>&lt;?= expression ?&gt;</code> writes a value to the response and escapes it for HTML text and quoted attributes."
           },
           {
-            "html": "<strong>Warning:</strong> <code>&lt;?= ?&gt;</code> does not escape HTML. For user-provided text inside HTML or quoted attributes, wrap the value in <code>h(value)</code>."
+            "html": "<strong>Note:</strong> Unlike PHP, <code>&lt;?= ?&gt;</code> escapes. To print HTML that your own code built, wrap it in <code>raw(html)</code>, and escape any text inside it with <code>h(value)</code>. <code>echo()</code> writes values without escaping."
           },
           {
             "label": "greeting.cow",
-            "code": "<h1>Hello, <?= h(req.get('name') || 'friend') ?>!</h1>"
+            "code": "<h1>Hello, <?= req.get('name') || 'friend' ?>!</h1>"
           },
           {
             "label": "Output — /greeting?name=<b>Clover</b>",

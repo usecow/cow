@@ -1,5 +1,6 @@
 {
-  "Escaped HTML output": { "prefix": "cowh", "body": "<?= h(${1:value}) ?>", "description": "Escape text for HTML output" },
+  "Print a value": { "prefix": "cowh", "body": "<?= ${1:value} ?>", "description": "Print a value; <?= ?> escapes it for HTML" },
+  "Print trusted HTML": { "prefix": "cowraw", "body": "<?= raw(${1:html}) ?>", "description": "Print trusted HTML without escaping" },
   "Include with explicit locals": { "prefix": "cowinclude", "body": "await include('${1:./_part.jsp}', { ${2:title}: ${3:value} })", "description": "Await an include using explicit locals" },
   "JSON response": { "prefix": "cowjson", "body": "res.json({ ${1:ok}: ${2:true} })", "description": "Finish the request with JSON" },
   "Read form data": { "prefix": "cowform", "body": "const ${1:values} = await req.formData()", "description": "Read multipart or URL-encoded input" },

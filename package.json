@@ -39,7 +39,8 @@
     "native": [
       "./lib/resource.mjs",
       "./lib/sqlite.mjs",
-      "./lib/highlight.mjs"
+      "./lib/highlight.mjs",
+      "./lib/html-trust.mjs"
     ]
   },
   "files": [
@@ -63,6 +64,7 @@
     "lib/resource.mjs",
     "lib/sqlite.mjs",
     "lib/web.mjs",
+    "lib/html-trust.mjs",
     "lib/csv.mjs",
     "lib/uploads.mjs",
     "lib/runtime-worker.mjs",

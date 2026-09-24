@@ -3,6 +3,8 @@ import type { SQLite } from './sqlite.d.mts'
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 export class HttpError extends Error { constructor(status: number, message: string); status: number }
 export function escapeHtml(value: unknown): string
+/** Marks trusted HTML so `<?= ?>` prints it as-is instead of escaping it. */
+export function raw(value: unknown): string
 export function form(request: CowRequest): URLSearchParams
 export function field(values: URLSearchParams | FormValues, name: string): string
 export function cookies(request: CowRequest): Readonly<Record<string, string | undefined>>

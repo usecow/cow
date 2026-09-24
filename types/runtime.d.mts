@@ -84,8 +84,12 @@ export interface TemplateContext<Locals = Record<string, unknown>> {
   res: CowResponse
   cow: CowContext
   locals: Locals
+  /** Writes values exactly as given, without escaping. */
   echo(...values: unknown[]): void
+  /** Escapes text for HTML. `<?= ?>` prints the result as-is, so it is escaped once. */
   h(value: unknown): string
+  /** Marks trusted HTML so `<?= ?>` prints it as-is instead of escaping it. */
+  raw(value: unknown): string
   die(): never
   include(path: string, locals?: Record<string, unknown>): Promise<void>
   __filename: string
