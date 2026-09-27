@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # bash stops at the first failing command on every OS, including Windows.
+    shell: bash
+
+jobs:
+  node:
+    name: Node.js ${{ matrix.node }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Cow's minimum Node.js version, and the current release line.
+        node: ['22.16', '24']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:package
+      - name: Website
+        run: |
+          node --test website/website.test.mjs
+          node bin/cow.mjs check website/site
+      - name: Examples
+        run: |
+          for example in forum mininews uploads info; do
+            npm test --prefix "examples/$example"
+          done
+
+  runtimes:
+    name: Bun and Deno on ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # Cow's minimum supported versions.
+          bun-version: 1.4.2
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.6
+      - run: npm ci
+      - run: npm run test:bun
+      - run: npm run test:deno
