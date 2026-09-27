@@ -14,9 +14,6 @@ export const docs = [
           },
           {
             "html": "Install <a href=\"https://nodejs.org/en/download\">Node.js 22.16 or newer</a> with npm."
-          },
-          {
-            "html": "<strong>Note:</strong> While <code>@cowlang/cow</code> is private, first run <code>npm login</code> with an account in the <code>@cowlang</code> organization, or use <a href=\"#archive\">a local package archive</a>."
           }
         ]
       },

@@ -31,9 +31,7 @@ checking.
 
 ## Create your first page
 
-The commands in this section install **`@cowlang/cow`** from npm. While the
-package is private, first run `npm login` with an account in the `@cowlang`
-organization, or use [a local archive](#install-locally-without-publishing).
+The commands in this section install **`@cowlang/cow`** from npm.
 
 1. Create a folder called `my-site`.
 
