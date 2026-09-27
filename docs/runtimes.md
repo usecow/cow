@@ -85,16 +85,10 @@ Third-party native adapters must support the selected runtime.
 Cow requires Node.js 22.16+, Bun 1.4.2+, Deno 2.9.6+, or Nub 0.9.2+ with
 Node.js 22.16+. Cow runs on Windows, macOS, and Linux.
 
-| Runtime | Tested on |
-| --- | --- |
-| Node.js 22.16 and 24 | Windows, macOS, and Linux, on every push |
-| Bun 1.4.2 | Linux on every push, and Windows |
-| Deno 2.9.6 | Linux on every push, and Windows |
-| Nub 0.9.2 | Windows |
-
-"On every push" means that continuous integration runs the full suite for each
-change. Newer runtime versions can behave differently. To check one, use the
-conformance suite in [Verify a runtime](#verify-a-runtime).
+Continuous integration tests every change on all three operating systems with
+Node.js 22.16 and 24, Bun 1.4.2, Deno 2.9.6, and Nub 0.9.2. Newer runtime
+versions can behave differently. To check one, use the conformance suite in
+[Verify a runtime](#verify-a-runtime).
 
 ### Nub
 
