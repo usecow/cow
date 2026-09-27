@@ -42,7 +42,9 @@ before(async () => {
     host: '127.0.0.1',
     port: 0,
     workers: 1,
-    timeout: 750,
+    // Long enough for a cold adapter page on a loaded CI machine; the stuck
+    // script test only needs some finite limit.
+    timeout: 3_000,
     logger: { error() {} }
   })
   baseUrl = (await app.start()).url
