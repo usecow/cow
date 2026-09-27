@@ -12,6 +12,10 @@ npm run test:bun
 npm run test:deno
 ```
 
+GitHub Actions runs the Node suite, the package test, the website checks, and
+the examples on Windows, macOS, and Linux with Node.js 22.16 and 24 for every
+push and pull request. It also runs the Bun and Deno suites on Linux.
+
 `npm test` runs the runtime's Node suite. The package test installs a local
 tarball into a disposable project and exercises the installed CLI, exports and
 examples. It downloads public dependencies and needs network access, but no

@@ -100,8 +100,8 @@ including dynamic imports from CommonJS.
 [hardening](../test/hardening.test.mjs), and
 [runtime bounds](../test/runtime-bounds.test.mjs) cover these rules. The separate
 [installed-package test](../test/package-install.mjs) checks the installed path.
-The [runtime guide](runtimes.md) records Windows verification on Node.js, Bun,
-Deno, and Nub, not every OS/version.
+The [runtime guide](runtimes.md#versions-and-differences) lists the operating
+systems and versions on which each runtime is tested.
 
 This is a Cow contract, not full Node.js or hostile-code compatibility.
 
