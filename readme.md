@@ -1,5 +1,7 @@
 # Cow
 
+<img align="right" src="website/site/assets/doodles/cow-peek.svg" height="150" alt="Clover, the Cow mascot, peeking in">
+
 [Cow](https://cowlang.com) is a classic take on a web runtime for JavaScript and
 TypeScript. Cow allows you to write server-side JavaScript or TypeScript with
 HTML, with batteries included. If you like PHP, you'll love Cow.
