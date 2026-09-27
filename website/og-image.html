@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Source for site/assets/og-image.png (1200x630). Re-render with headless Edge:
+     msedge --headless=new --window-size=1200,630 --allow-file-access-from-files --screenshot=site/assets/og-image.png og-image.html -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Lexend; src: url('site/assets/lexend-latin.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Funnel Sans'; src: url('site/assets/funnel-sans-latin.woff2') format('woff2'); font-weight: 300 800; }
+html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #ffffff; }
+.card { position: relative; width: 1200px; height: 630px; box-sizing: border-box; padding: 64px 72px; font-family: 'Funnel Sans', sans-serif; color: #181b13; }
+.brand { display: flex; align-items: center; gap: 14px; font-family: Lexend; font-weight: 650; font-size: 40px; letter-spacing: -.02em; }
+.brand img { width: 56px; height: 56px; }
+.intro { margin: 58px 0 18px; font-size: 26px; color: #364922; }
+h1 { margin: 0; font-family: Lexend; font-weight: 650; font-size: 70px; line-height: 1.08; letter-spacing: -.042em; }
+.marked { position: relative; white-space: nowrap; }
+.marked svg { position: absolute; width: 102%; height: 26px; top: calc(100% - 6px); left: 0; overflow: visible; }
+.marked path { fill: none; stroke: #8faf6a; stroke-width: 7; stroke-linecap: round; }
+.url { position: absolute; left: 72px; bottom: 56px; font-size: 24px; color: #5e634f; }
+.cow { position: absolute; right: 56px; bottom: 14px; width: 300px; height: auto; }
+.meadow { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: #eef1e4; border-top: 1px solid #cbd5b4; }
+</style></head>
+<body><div class="card">
+  <div class="brand"><img src="site/assets/cow-mark.svg" alt=""><span>Cow</span></div>
+  <p class="intro">A web runtime for JavaScript and TypeScript.</p>
+  <h1>No build. No framework.<br><span class="marked">No bull.<svg viewBox="0 0 510 30" preserveAspectRatio="none"><path d="M5 19 Q240 -2 501 12 M37 27 Q235 8 450 24"/></svg></span></h1>
+  <p class="url">cowlang.com</p>
+  <img class="cow" src="site/assets/doodles/cow-wave.svg" alt="">
+  <div class="meadow"></div>
+</div></body></html>
