@@ -31,7 +31,8 @@ async function fixture(t, name = 'news') {
   await cp(join(project, 'lib'), join(installed, 'lib'), {recursive:true})
   await writeFile(join(site, 'index.cow'), `<?js res.header('x-parent','kept'); ?><h1>My website</h1><?js await include(${JSON.stringify('./' + name + '.cow')}, {mode:'feed',url:${JSON.stringify(path)},limit:2}) ?><p>After news</p>`)
   async function start() {
-    app = new CowApp({rootDir:site,host:'127.0.0.1',port:0,workers:2,logger:{error(){}}})
+    // Slow CI machines (Deno on Windows) can take over 10s on a cold request.
+    app = new CowApp({rootDir:site,host:'127.0.0.1',port:0,workers:2,timeout:30_000,logger:{error(){}}})
     url = (await app.start()).url
   }
   await start()
@@ -53,7 +54,7 @@ function client(f) {
       const response = await fetch(f.url + path, {
         redirect:'manual',method:values === undefined ? 'GET' : 'POST',
         headers:{...(cookie ? {cookie} : {}),...headers},
-        body:values === undefined ? undefined : new URLSearchParams(values), signal:AbortSignal.timeout(15000)
+        body:values === undefined ? undefined : new URLSearchParams(values), signal:AbortSignal.timeout(45000)
       })
       for (const item of response.headers.getSetCookie()) if (item.startsWith('mn_')) cookie = item.split(';')[0]
       return {status:response.status,headers:response.headers,text:await response.text()}
