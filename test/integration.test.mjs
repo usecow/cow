@@ -752,7 +752,9 @@ test('rejects work beyond the bounded runtime queue', async () => {
     host: '127.0.0.1',
     port: 0,
     workers: 1,
-    timeout: 100,
+    // The two hanging requests must still hold the worker and the queue when
+    // the third arrives, even on a slow CI machine.
+    timeout: 1_500,
     maxQueue: 1,
     logger: { error() {} }
   })
