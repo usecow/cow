@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { test } from 'node:test'
 import { CowApp } from '../lib/app.mjs'
 import { compileSource, CowCompileError } from '../lib/compiler.mjs'
@@ -136,4 +138,19 @@ const input = req.get('q')
   assert.match(body, /\[\]<hr>$/, 'null and undefined print nothing; echo() stays unescaped')
   // Trust is per request: a string raw() returned earlier is escaped later.
   assert.equal(await (await f.get('/echo?q=' + encodeURIComponent('<i>trusted</i>'))).text(), '&lt;i&gt;trusted&lt;/i&gt;')
+})
+
+test('trusted HTML from helpers survives a Cow path typed in a different case', async t => {
+  // Only a case-insensitive disk (Windows, default macOS) opens the flipped path.
+  const lib = fileURLToPath(new URL('../lib/', import.meta.url))
+  const flipped = lib.replace(/[a-z]/gi, c => c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase())
+  if (!existsSync(join(flipped, 'app.mjs'))) return t.skip('case-sensitive file system')
+  const { CowApp: FlippedApp } = await import(pathToFileURL(join(flipped, 'app.mjs')).href)
+  const root = await mkdtemp(join(tmpdir(), 'cow-case-'))
+  const app = new FlippedApp({ rootDir: root, workers: 1, logger: { error() {} } })
+  t.after(async () => { try { await app.close() } finally { await rm(root, { recursive: true, force: true }) } })
+  await writeFile(join(root, '_markup.cow'), "<?js\nimport { raw } from 'cow:web'\nexport const badge = () => raw('<b>ok</b>')\n")
+  await writeFile(join(root, 'index.cow'), "<?js import { badge } from './_markup.cow' ?><?= badge() ?>")
+  await app.initialize()
+  assert.equal(Buffer.from((await app.execute({ url: '/' })).response.body).toString(), '<b>ok</b>')
 })
