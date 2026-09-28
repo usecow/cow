@@ -4,7 +4,11 @@
 export const cases = [], beforeHooks = [], afterHooks = []
 export function test(name, options, fn) {
   if (typeof options === 'function') fn = options
-  else if (options && Object.keys(options).length) throw new Error(`Unsupported standalone test options: ${name}`)
+  else if (options) {
+    const { skip, ...unsupported } = options
+    if (Object.keys(unsupported).length) throw new Error(`Unsupported standalone test options: ${name}`)
+    if (skip) return console.log(`SKIP ${name}: ${skip}`)
+  }
   cases.push({ name, fn })
 }
 export const before = fn => beforeHooks.push(fn)

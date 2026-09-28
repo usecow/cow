@@ -140,11 +140,13 @@ const input = req.get('q')
   assert.equal(await (await f.get('/echo?q=' + encodeURIComponent('<i>trusted</i>'))).text(), '&lt;i&gt;trusted&lt;/i&gt;')
 })
 
-test('trusted HTML from helpers survives a Cow path typed in a different case', async t => {
-  // Only a case-insensitive disk (Windows, default macOS) opens the flipped path.
-  const lib = fileURLToPath(new URL('../lib/', import.meta.url))
-  const flipped = lib.replace(/[a-z]/gi, c => c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase())
-  if (!existsSync(join(flipped, 'app.mjs'))) return t.skip('case-sensitive file system')
+// Only a case-insensitive disk (Windows, default macOS) opens Cow's own path
+// with its letter case flipped.
+const libPath = fileURLToPath(new URL('../lib/', import.meta.url))
+const flipped = libPath.replace(/[a-z]/gi, c => c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase())
+const caseSensitive = !existsSync(join(flipped, 'app.mjs'))
+
+test('trusted HTML from helpers survives a Cow path typed in a different case', { skip: caseSensitive && 'case-sensitive file system' }, async t => {
   const { CowApp: FlippedApp } = await import(pathToFileURL(join(flipped, 'app.mjs')).href)
   const root = await mkdtemp(join(tmpdir(), 'cow-case-'))
   const app = new FlippedApp({ rootDir: root, workers: 1, logger: { error() {} } })
