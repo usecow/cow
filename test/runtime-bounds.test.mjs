@@ -371,3 +371,84 @@ test('a successful replacement serves queued work and clears the failure streak'
   assert.equal(f.app.runtime.status().recovery[0].consecutiveFailures, 0)
   assert.equal(f.app.runtime.status().recovery[0].lastError.code, 'COW_WORKER_EXIT')
 })
+
+test('an exhausted slot keeps retrying and serves again once a worker starts', async (t) => {
+  let spawns = 0
+  let healthy = false
+  const logs = []
+  const pool = new WorkerPool({ size: 1, startupTimeout: 150, restartDelay: 20, restartMaxDelay: 100, restartLimit: 1,
+    logger: { warn: message => logs.push(message), error: message => logs.push(message) } }, {
+    createWorker: () => {
+      spawns++
+      return new Worker(spawns === 1 ? `
+        const { parentPort } = require('node:worker_threads');
+        parentPort.postMessage({type:'ready'});
+        parentPort.on('message', () => process.exit(17));
+      ` : healthy ? `
+        const { parentPort } = require('node:worker_threads');
+        parentPort.postMessage({type:'ready'});
+        parentPort.on('message', message => message.type === 'shutdown'
+          ? parentPort.postMessage({type:'shutdown-complete'})
+          : parentPort.postMessage({id: message.id, ok: true, result: 'served'}));
+      ` : 'setInterval(() => {}, 1000)', { eval: true })
+    }
+  })
+  t.after(() => pool.close())
+  await pool.start()
+  await assert.rejects(pool.run({}, {}), /exited with code 17/)
+  await waitFor(() => pool.status().state === 'failed')
+  assert.ok(logs.some(line => /slot 1 exhausted 1 restarts/.test(line)))
+  const before = spawns
+  await delay(250)
+  assert.ok(spawns > before, 'a failed slot is retried')
+  assert.equal(pool.status().state, 'failed')
+  healthy = true
+  await waitFor(() => pool.status().state === 'running')
+  assert.equal(await pool.run({}, {}), 'served')
+  assert.equal(pool.status().recovery[0].consecutiveFailures, 0)
+  assert.ok(logs.some(line => /slot 1 started again/.test(line)))
+})
+
+test('a failed runtime refuses admission with its own code and one log line', async (t) => {
+  const errors = []
+  const f = await fixture(t, { logger: { error: message => errors.push(message), warn() {} } })
+  await f.write('index.jsp', 'healthy')
+  const url = await f.start()
+  f.app.runtime.failed = true
+  const responses = await Promise.all(Array.from({ length: 5 }, () => fetch(url)))
+  for (const response of responses) {
+    assert.equal(response.status, 503)
+    assert.match(await response.text(), /COW_RUNTIME_FAILED/)
+  }
+  assert.equal(errors.filter(line => /no worker is running/.test(line)).length, 1)
+  f.app.runtime.failed = false
+  assert.equal(await (await fetch(url)).text(), 'healthy')
+})
+
+test('a stalled connection loses its admissions, pipelined ones included, and a full admission names them', async (t) => {
+  const { connect } = await import('node:net')
+  const lines = []
+  const log = message => lines.push(String(message?.message ?? message))
+  const f = await fixture(t, { maxQueue: 2, stallTimeout: 300, logger: { error: log, warn: log } })
+  await f.write('big.txt', 'x'.repeat(8 * 1024 * 1024))
+  await f.write('index.jsp', 'healthy')
+  const url = await f.start()
+  const { port } = new URL(url)
+  const socket = connect(Number(port), '127.0.0.1')
+  t.after(() => socket.destroy())
+  socket.on('error', () => {})
+  await new Promise(resolve => socket.once('connect', resolve))
+  socket.pause()
+  // Three pipelined requests: the second and third queue behind the first.
+  socket.write('GET /big.txt?token=secret HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'.repeat(3))
+  await waitFor(() => f.app.dispatcher.status().admittedRequests === 3)
+  const refused = await fetch(url)
+  assert.equal(refused.status, 503)
+  assert.match(await refused.text(), /COW_ADMISSION_FULL/)
+  assert.deepEqual(f.app.dispatcher.status().admissionHolders.map(route => route.route), ['GET /big.txt'])
+  assert.ok(lines.some(line => line.includes('Cow admission is full') && line.includes('GET /big.txt x3')))
+  assert.ok(!lines.some(line => line.includes('secret')), 'a query string is never logged')
+  await waitFor(() => f.app.dispatcher.status().admittedRequests === 0)
+  assert.ok(lines.some(line => line.includes('Cow closed GET /big.txt')))
+  assert.equal(await (await fetch(url)).text(), 'healthy')
+})

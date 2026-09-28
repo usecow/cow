@@ -58,6 +58,7 @@ is `cache: false`. See [Embedding Cow](embedding.md).
 | `--body-timeout` | 10000 ms | Total body read time, including slow senders. | 408 |
 | `--queue-timeout` | 10000 ms | The wait for a worker. This is separate from body read and execution. | 503 |
 | `--timeout` | 10000 ms | Execution, async draining, and request cleanup. | 504 |
+| `--stall-timeout` | 120000 ms | A request whose connection writes nothing for this long. | Cow closes the connection and releases its admission. |
 | `--output-limit` | 8388608 bytes | Buffered page output. | That request fails with 500. |
 | `--buffer-limit` | 16777216 bytes | Aggregate admitted body bytes and pending HTTP response bodies. | 503 |
 
@@ -65,8 +66,16 @@ Admission happens before body buffering, routing, and compilation. It also
 applies to static requests and `app.execute()`.
 
 Cow holds admission until HTTP output finishes or disconnects, so slow readers
-cannot retain unlimited responses. A program that embeds Cow owns delivery
-and retention of the returned output, including static-file streaming.
+cannot retain unlimited responses. A reader that stops reading holds its slot
+for at most `--stall-timeout`, and so do pipelined requests queued behind it.
+A program that embeds Cow owns delivery and retention of the returned output,
+including static-file streaming.
+
+When admission is full, Cow answers 503 `COW_ADMISSION_FULL` and logs one line
+every 10 seconds, not one per request. The line counts the refusals and names
+the routes that hold the slots, with the age of the oldest. Status shows the
+same list as `application.admissionHolders`. Paths are logged without their
+query strings.
 
 Health and status GETs bypass application admission so that they remain usable
 under overload. Restrict those endpoints at the proxy. See
@@ -192,7 +201,7 @@ replacement:
 | `--startup-timeout` | 10000 ms | Bounds worker readiness. |
 | `--restart-delay` | 100 ms | Sets the wait before a replacement starts. |
 | `--restart-max-delay` | 5000 ms | Caps the delay. Consecutive crashes or startup failures double the delay up to this value. |
-| `--restart-limit` | 5 | Sets the maximum retries per worker slot. |
+| `--restart-limit` | 5 | Sets the consecutive failures a slot allows before Cow marks it failed. |
 
 - A failed initial startup stops the pool and rejects startup. Cow does not
   open its HTTP listener first.
@@ -202,10 +211,18 @@ replacement:
   without adding a crash failure.
 - Closing the app cancels scheduled replacements.
 - Worker recovery never replays the request that crashed the worker.
+- Cow logs each failed replacement, each exhausted slot, and each exhausted
+  slot that starts again.
 
 ### Fix a degraded or failed worker pool
 
-Exhausted slots remain failed. They are visible in `/_cow/status`, under
+An exhausted slot is marked failed, and Cow keeps retrying it every
+`--restart-max-delay`. A host too busy to start a worker within
+`--startup-timeout` exhausts its slots too, and it recovers once the load
+drops. When a retry starts a worker, the slot serves again. One more failure
+before a request succeeds marks it failed again.
+
+Failed slots are visible in `/_cow/status`, under
 `application.runtime.recovery`, with the last error and failure count. In the
 status report, `runtime` names Cow's execution worker pool, not the JavaScript
 runtime.
@@ -213,13 +230,14 @@ runtime.
 | `application.runtime.state` | Meaning |
 | --- | --- |
 | `degraded` | Some slots have failed, so Cow has partial capacity. |
-| `failed` | All slots have failed. Cow rejects queued work, and health returns 503. |
+| `failed` | All slots have failed. Cow rejects queued work and refuses new requests with 503 `COW_RUNTIME_FAILED` until a retry starts a worker. Health returns 503. |
 
-To recover:
+When a slot keeps failing:
 
 1. Inspect `lastError` in the `recovery` entry for the failed slot.
-1. Fix its cause.
-1. Restart the application.
+1. Fix its cause. On a loaded host, `COW_WORKER_START_TIMEOUT` can mean that
+   `--startup-timeout` is too short.
+1. Cow picks up the fix on its next retry, with no restart.
 
 ## Shut down cleanly
 

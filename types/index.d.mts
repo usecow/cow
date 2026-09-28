@@ -20,6 +20,7 @@ export interface CowAppOptions {
   rootDir?: string; host?: string; port?: number; workers?: number; timeout?: number
   maxQueue?: number; queueTimeout?: number; maxRequestsPerWorker?: number; memoryLimitMb?: number
   shutdownTimeout?: number; bodyLimit?: number; outputLimit?: number; bufferLimit?: number; bodyTimeout?: number
+  stallTimeout?: number
   startupTimeout?: number; restartDelay?: number; restartMaxDelay?: number; restartLimit?: number
   cacheEntries?: number; cacheBytes?: number; resourceLimit?: number; adapterLimit?: number; namespaceLimit?: number
   sourceLimit?: number; compileTimeout?: number; compileMaxPending?: number; compiledBufferLimit?: number

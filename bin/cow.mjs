@@ -29,6 +29,7 @@ program
   .addOption(new Option('--shutdown-timeout <milliseconds>', 'total HTTP drain and worker shutdown budget').default('5000').argParser(Number))
   .addOption(new Option('--body-limit <bytes>', 'maximum request body size').default('1048576').argParser(Number))
   .addOption(new Option('--body-timeout <milliseconds>', 'total request body read deadline').default('10000').argParser(Number))
+  .addOption(new Option('--stall-timeout <milliseconds>', 'close a request that writes nothing for this long').default('120000').argParser(Number))
   .addOption(new Option('--output-limit <bytes>', 'maximum buffered template response').default('8388608').argParser(Number))
   .addOption(new Option('--buffer-limit <bytes>', 'aggregate admitted HTTP input/output buffer budget').default('16777216').argParser(Number))
   .addOption(new Option('--startup-timeout <milliseconds>', 'worker readiness deadline').default('10000').argParser(Number))
@@ -93,6 +94,7 @@ async function serve(directoryArgument, options) {
     shutdownTimeout: options.shutdownTimeout,
     bodyLimit: options.bodyLimit,
     bodyTimeout: options.bodyTimeout,
+    stallTimeout: options.stallTimeout,
     outputLimit: options.outputLimit,
     bufferLimit: options.bufferLimit,
     startupTimeout: options.startupTimeout,
