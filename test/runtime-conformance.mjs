@@ -6,7 +6,7 @@ import { runtimeCommand } from '../lib/runtime-launcher.mjs'
 
 const files = [
   'async-semantics', 'cow-helpers', 'cow-pages', 'compiler', 'lexer', 'csv',
-  'import-compatibility', 'request-contract', 'resource-lifecycle', 'sqlite',
+  'import-compatibility', 'request-contract', 'resource-lifecycle', 'sqlite', 'postgres',
   'retention', 'runtime-bounds', 'embedding-lifecycle', 'streaming', 'uploads',
   'info', 'source-maps', 'host-compatibility', 'http-contract',
   'standard-library', 'sessions', 'site-errors', 'request-metadata', 'web', 'safety'

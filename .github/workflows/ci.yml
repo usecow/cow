@@ -82,3 +82,39 @@ jobs:
       - run: npm run test:deno
       - name: One site on Node.js, Bun, Nub and Deno
         run: npm run test:runtimes
+
+  postgres:
+    name: Postgres on Node.js, Bun and Deno
+    # GitHub runs service containers on Linux runners only.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cow
+          POSTGRES_PASSWORD: cow
+          POSTGRES_DB: cow
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cow"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      COW_TEST_POSTGRES_URL: postgres://cow:cow@localhost:5432/cow
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.6
+      - run: npm ci
+      - run: node --test --test-reporter=spec test/postgres.test.mjs
+      - run: bun test/bun-conformance.mjs test/postgres.test.mjs
+      - run: deno test --allow-all --no-check --no-config --node-modules-dir=manual test/postgres.test.mjs

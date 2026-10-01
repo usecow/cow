@@ -159,6 +159,12 @@ test('the packed runtime serves installed projects and plain sites through npx',
   assert.equal(packageInfo.version, packed.version)
   await writeFile(join(app,'typing.mts'), `import type {CowRequest,CowResponse,SiteError} from '@cowlang/cow/runtime';
     import {session} from '@cowlang/cow/web'; import {sqlite} from '@cowlang/cow/sqlite'; import {parseCsv} from '@cowlang/cow/csv';
+    import {postgres,type Postgres} from '@cowlang/cow/postgres';
+    export async function stories():Promise<string[]> {
+      const db:Postgres=await postgres('postgres://cow@localhost/cow',{max:2});
+      await db.migrate(['CREATE TABLE story (title text)',async tx=>{await tx.run('INSERT INTO story VALUES ($1)',['First'])}]);
+      return db.transaction(async tx=>(await tx.all<{title:string}>('SELECT title FROM story')).map(row=>row.title),{isolation:'serializable'});
+    }
     export async function page(req:CowRequest,res:CowResponse) {
       const current=await session(await sqlite(':memory:'),req,res); current.update({count:1});
       res.json(parseCsv('name,id\\nCow,001'));
@@ -229,6 +235,10 @@ test('the packed runtime serves installed projects and plain sites through npx',
   await writeFile(join(site, '_mapped.ts'), 'interface Removed {\n  n: number\n}\nexport function fail(): never {\n  throw new Error("installed TS location");\n}\n')
   await writeFile(join(site, 'mapped.jsp'), `<?js import {fail} from './_mapped.ts'; fail(); ?>`)
   await writeFile(join(site, 'async-failure.jsp'), `<?js import {readFile} from 'node:fs/promises'; readFile(__dirname+'/_missing'); res.json('wrong success'); ?>`)
+  // pg is an optional peer that this site has not installed.
+  await writeFile(join(site, 'postgres-probe.jsp'), `<?js
+    import { postgres } from 'cow:postgres';
+    try { await postgres('postgres://cow@127.0.0.1:1/cow'); res.json('connected') } catch (error) { res.json(error.code) } ?>`)
   await writeFile(join(site, 'csv-probe.jsp'), `<?js import {parseCsv,stringifyCsv} from '@cowlang/cow/csv'; res.json(parseCsv(stringifyCsv([['Cow, site','001']]))); ?>`)
   await writeFile(join(site, 'session-probe.jsp'), `<?js
     import { sqlite } from '@cowlang/cow/sqlite';
@@ -506,6 +516,9 @@ test('the packed runtime serves installed projects and plain sites through npx',
   assert.equal(asyncFailure.status,500)
   assert.match(asyncFailure.text,/COW_UNHANDLED_REJECTION/)
   assert.match(asyncFailure.text,/ENOENT/)
+  const postgresProbe = await visitor.request('/postgres-probe')
+  assert.equal(postgresProbe.status, 200, postgresProbe.text)
+  assert.equal(JSON.parse(postgresProbe.text), 'COW_POSTGRES_DRIVER_MISSING')
   const csv = await visitor.request('/csv-probe')
   assert.equal(csv.status,200,csv.text)
   assert.deepEqual(JSON.parse(csv.text),[['Cow, site','001']])

@@ -11,6 +11,7 @@ guide for what you want to do. If you have not used Cow before, start with
 - [Request and response API](runtime-api.md): page bindings, request metadata, forms, and uploads.
 - [Diagnostics](runtime-api.md#diagnostics): the `cow.info()` page and JSON report.
 - [SQLite, forms, and sessions](sqlite-sessions.md): queries, transactions, session updates, and cookie helpers.
+- [Postgres](postgres.md): connections, migrations, queries, and transactions with `cow:postgres`.
 - [Output and errors](output-and-errors.md): error pages, private file downloads, and streaming.
 - [Authoring](authoring.md): optional declarations and editor support.
 

@@ -52,7 +52,7 @@ Output, with blank lines removed:
 
 | Import or feature | Cow behavior |
 | --- | --- |
-| `cow:web`, `cow:sqlite`, `cow:resource`, `cow:csv`, `cow:runtime` | Bundled helpers from the running Cow installation, even with `npx` or a global command, like `node:` built-ins. `@cowlang/cow/<name>` is an equivalent alias, and both spellings take precedence over a local Cow package. An unknown `cow:` name fails with `COW_MODULE_UNKNOWN`. The normal request/native lifetime rules still apply. |
+| `cow:web`, `cow:sqlite`, `cow:postgres`, `cow:resource`, `cow:csv`, `cow:runtime` | Bundled helpers from the running Cow installation, even with `npx` or a global command, like `node:` built-ins. `@cowlang/cow/<name>` is an equivalent alias, and both spellings take precedence over a local Cow package. An unknown `cow:` name fails with `COW_MODULE_UNKNOWN`. The normal request/native lifetime rules still apply. |
 | `.mjs`, `.ts` | ESM, fresh each request. TypeScript transpiles. There is no full type checking. |
 | `.cow` | Code-only tagged ESM, with optional types, named/default exports, and top-level await. Fresh each request. Whitespace outside code tags is ignored. HTML/echo blocks fail with `COW_MODULE_OUTPUT`. Use `include()` for output. |
 | `.js` | The nearest package.json `type` decides. `module` selects ESM. Otherwise, the file is CommonJS. Prefer explicit `.mjs`/`.cjs`. |

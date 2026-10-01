@@ -33,6 +33,10 @@
     "./runtime": {
       "types": "./types/runtime.d.mts",
       "default": "./lib/runtime-types.mjs"
+    },
+    "./postgres": {
+      "types": "./types/postgres.d.mts",
+      "default": "./lib/postgres.mjs"
     }
   },
   "cow": {
@@ -40,7 +44,8 @@
       "./lib/resource.mjs",
       "./lib/sqlite.mjs",
       "./lib/highlight.mjs",
-      "./lib/html-trust.mjs"
+      "./lib/html-trust.mjs",
+      "./lib/postgres.mjs"
     ]
   },
   "files": [
@@ -63,6 +68,7 @@
     "lib/router.mjs",
     "lib/resource.mjs",
     "lib/sqlite.mjs",
+    "lib/postgres.mjs",
     "lib/web.mjs",
     "lib/html-trust.mjs",
     "lib/csv.mjs",
@@ -97,6 +103,7 @@
     "docs/request-lifecycle.md",
     "docs/resources.md",
     "docs/sqlite-sessions.md",
+    "docs/postgres.md",
     "docs/embedding.md",
     "docs/operations.md",
     "docs/runtimes.md",
@@ -130,7 +137,8 @@
     "undici": "7.29.1"
   },
   "devDependencies": {
-    "@types/node": "^22.16.0"
+    "@types/node": "^22.16.0",
+    "pg": "^8.23.1"
   },
   "keywords": [
     "javascript",
@@ -148,5 +156,13 @@
   },
   "bugs": {
     "url": "https://github.com/usecow/cow/issues"
+  },
+  "peerDependencies": {
+    "pg": "^8.11.0"
+  },
+  "peerDependenciesMeta": {
+    "pg": {
+      "optional": true
+    }
   }
 }

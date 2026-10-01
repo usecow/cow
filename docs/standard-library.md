@@ -31,7 +31,7 @@ without duplicating them under new names.
 | Password verification and HTML escaping | `cow:web` | Fixed scrypt profile. Escaping is for HTML text and quoted attributes, not all contexts. |
 | Forms, uploads, and response headers | `req` and `res` APIs, and `cow:web` | Buffered uploads. Explicit streamed file, download, and generated output is available. |
 | Cookies and sessions | `cow:web` | SQLite-backed explicit snapshots, conflicts, and renewal. Not PHP's implicit shutdown writes. |
-| SQL data and transactions | `cow:sqlite` native adapter | SQLite only. Other engines require concrete adapters. |
+| SQL data and transactions | `cow:sqlite` and `cow:postgres` native adapters | SQLite and Postgres. Postgres needs the site to install `pg`. Other engines require concrete adapters. |
 | CSV import and export | `cow:csv` | Buffered text API. No spreadsheet evaluation or automatic header mapping. |
 | Cow/HTML syntax highlighting | `@cowlang/cow/highlight` native adapter | Shares the compiler's lexer; best-effort token classification, not a parse. Escaped HTML spans or a raw token stream. |
 | XML/DOM, images, archives, and mail | No bundled implementation | `DOMParser` and `Image` globals, and raw `node:zlib`, `node:stream`, and `node:net`, are not exposed. Evaluate packages or adapters when you need them. |

@@ -79,8 +79,8 @@ A Cow site is a folder of files, and the folder that you made is a complete
 site. Cow has no configuration file and no build step. Add a `package.json`
 file and a `node_modules` folder only when you install third-party packages.
 
-Cow supplies its own `cow:web`, `cow:sqlite`, `cow:csv`, `cow:resource`, and
-`cow:runtime` modules from the running installation, the way Node.js supplies
+Cow supplies its own `cow:web`, `cow:sqlite`, `cow:postgres`, `cow:csv`,
+`cow:resource`, and `cow:runtime` modules from the running installation, the way Node.js supplies
 `node:` built-ins. These imports work in plain directories too, and
 `@cowlang/cow/web` and friends remain equivalent aliases. Third-party packages
 still resolve from the site's own `node_modules`. Install those locally when

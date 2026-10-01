@@ -39,6 +39,7 @@ The package provides declarations for these modules:
 - `cow:runtime` and `@cowlang/cow/runtime`
 - `cow:web` and `@cowlang/cow/web`
 - `cow:sqlite` and `@cowlang/cow/sqlite`
+- `cow:postgres` and `@cowlang/cow/postgres`
 - `cow:resource` and `@cowlang/cow/resource`
 - `cow:csv` and `@cowlang/cow/csv`
 

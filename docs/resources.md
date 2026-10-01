@@ -7,23 +7,23 @@ outlive one request. This page explains how a Cow-aware package keeps a
 connection open across requests, and how to write such an adapter with
 `defineResource()`.
 
-If you only want SQLite, skip this page.
-[`cow:sqlite`](sqlite-sessions.md) is already an adapter, and you use it
-with an ordinary import.
+If you only want SQLite or Postgres, skip this page.
+[`cow:sqlite`](sqlite-sessions.md) and [`cow:postgres`](postgres.md) are
+already adapters, and you use them with an ordinary import.
 
 ## Use a Cow-aware package
 
 Pages use ordinary imports. A Cow-aware package hides connection reuse behind its
 normal application API.
 
-In these examples, `@acme/cow-postgres` stands in for a Cow-aware adapter
+In these examples, `@acme/cow-mysql` stands in for a Cow-aware adapter
 package. Save this as `_db.cow`:
 
 ```js
 <?js
-import { postgres } from '@acme/cow-postgres'
+import { mysql } from '@acme/cow-mysql'
 
-export default await postgres({
+export default await mysql({
   url: process.env.DATABASE_URL,
   maxConnections: 5
 })
@@ -56,7 +56,7 @@ Inside the adapter package, import `defineResource()` from the
 import { defineResource } from '@cowlang/cow/resource'
 
 const acquirePool = defineResource({
-  name: 'postgres',
+  name: 'mysql',
 
   key(options) {
     return `${options.url}:${options.maxConnections}`
@@ -79,7 +79,7 @@ const acquirePool = defineResource({
   }
 })
 
-export function postgres(options) {
+export function mysql(options) {
   return acquirePool(options)
 }
 ```
@@ -92,8 +92,8 @@ request's facade.
 | --- | --- | --- |
 | `name` | Yes | Names the adapter. |
 | `key(options)` | Yes | Returns a string that identifies one resource instance. It must be synchronous. |
-| `open(options)` | Yes | Opens the persistent resource, such as a pool. |
-| `acquire(resource, context)` | No | Returns the value that one request uses. The context carries `options`, `request`, and `signal`. |
+| `open(options, context)` | Yes | Opens the persistent resource, such as a pool. The context carries `worker` and `root`, the site directory. |
+| `acquire(resource, context)` | No | Returns the value that one request uses. The context carries `options`, `request`, `signal`, and `root`. |
 | `release(value, outcome)` | No | Runs when the request finishes. `outcome.error` is set when the request failed. |
 | `close(resource)` | Yes | Closes the persistent resource. |
 
@@ -120,7 +120,12 @@ Adapter authors declare exact native entry points in their `package.json`:
   `import`, not a CommonJS `require`.
 - Changes to native adapter code require a restart.
 
-`@cowlang/cow/sqlite` already declares its native entry.
+`@cowlang/cow/sqlite` and `@cowlang/cow/postgres` already declare their
+native entries.
+
+To load a driver that the site installed, resolve it from `root`, as
+`cow:postgres` does with `pg`. A driver found that way lives in the worker
+realm with the adapter.
 
 ## Resource lifetime
 

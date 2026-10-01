@@ -683,7 +683,7 @@ export const docs = [
             "html": "<ul><li><code>all(sql, parameters)</code> returns rows.</li><li><code>get(sql, parameters)</code> returns a row or <code>undefined</code>.</li><li><code>run(sql, parameters)</code> returns change and inserted-ID information, for example <code>{ lastInsertRowid: 1, changes: 1 }</code>.</li><li><code>exec(sql)</code> executes SQL without bound parameters.</li></ul>"
           },
           {
-            "html": "SQLite is the bundled database adapter. Other database engines need a compatible adapter."
+            "html": "Cow also bundles a <a href=\"/docs/postgres\">Postgres</a> adapter. Other database engines need a compatible adapter."
           }
         ]
       }
@@ -691,6 +691,105 @@ export const docs = [
     "related": [
       "sessions",
       "responses",
+      "reference"
+    ]
+  },
+  {
+    "slug": "postgres",
+    "title": "Postgres",
+    "description": "Connect to Postgres, migrate the schema, and run queries.",
+    "sections": [
+      {
+        "id": "connect",
+        "title": "Connect to a database",
+        "blocks": [
+          {
+            "html": "This guide shows you how to connect a page to Postgres with <code>cow:postgres</code>, run queries with bound parameters, and group changes in a transaction."
+          },
+          {
+            "html": "The adapter uses the <code>pg</code> driver. Install it in the folder that holds your site:"
+          },
+          {
+            "label": "Terminal",
+            "code": "npm install pg"
+          },
+          {
+            "html": "Then keep the connection in a private helper. Cow keeps one pool for each worker open between requests."
+          },
+          {
+            "label": "_db.cow",
+            "code": "<?js\nimport { postgres } from 'cow:postgres'\n\nexport default await postgres(process.env.DATABASE_URL)"
+          }
+        ]
+      },
+      {
+        "id": "queries",
+        "title": "Run queries",
+        "blocks": [
+          {
+            "html": "Every method returns a promise, so <code>await</code> it. Write <code>$1</code>, <code>$2</code>, and so on for parameters."
+          },
+          {
+            "label": "notes.cow",
+            "code": "<?js\nimport db from './_db.cow'\n\nawait db.run('INSERT INTO notes (title) VALUES ($1)', ['A little idea'])\nconst notes = await db.all('SELECT id, title FROM notes ORDER BY id DESC')\n?>\n<ul>\n  <?js for (const note of notes) { ?>\n    <li><?= note.title ?></li>\n  <?js } ?>\n</ul>"
+          },
+          {
+            "html": "<ul><li><code>all(sql, parameters)</code> returns rows. <code>query()</code> is an alias.</li><li><code>get(sql, parameters)</code> returns a row or <code>undefined</code>.</li><li><code>run(sql, parameters)</code> returns <code>{ changes, rows }</code>. Add <code>RETURNING id</code> to read a new row's ID from <code>rows</code>.</li><li><code>exec(sql)</code> runs SQL without parameters.</li></ul>"
+          },
+          {
+            "html": "Timestamp columns arrive as <code>Date</code> objects. <code>bigint</code> and <code>numeric</code> columns arrive as strings, so no digits are lost."
+          }
+        ]
+      },
+      {
+        "id": "transactions",
+        "title": "Group changes in a transaction",
+        "blocks": [
+          {
+            "label": "A transaction",
+            "code": "const id = await db.transaction(async tx => {\n  const added = await tx.run('INSERT INTO notes (title) VALUES ($1) RETURNING id', ['First idea'])\n  await tx.run('INSERT INTO tags (note_id, name) VALUES ($1, $2)', [added.rows[0].id, 'ideas'])\n  return added.rows[0].id\n})"
+          },
+          {
+            "html": "Run the queries through <code>tx</code>. It holds one connection until the callback finishes. If the callback throws, the transaction rolls back. A nested <code>tx.transaction()</code> uses a savepoint. To choose an isolation level, pass <code>{ isolation: 'serializable' }</code>."
+          },
+          {
+            "html": "<strong>Note:</strong> Await the transaction before you end the response. Ending it inside the callback fails the request with <code>COW_POSTGRES_RESPONSE_IN_TRANSACTION</code> and rolls back."
+          }
+        ]
+      },
+      {
+        "id": "migrations",
+        "title": "Change the schema with migrations",
+        "blocks": [
+          {
+            "label": "_db.cow",
+            "code": "<?js\nimport { postgres } from 'cow:postgres'\n\nconst db = await postgres(process.env.DATABASE_URL)\n\nawait db.migrate([\n  'CREATE TABLE notes (id serial PRIMARY KEY, title text NOT NULL)',\n  'ALTER TABLE notes ADD COLUMN pinned boolean NOT NULL DEFAULT false'\n])\n\nexport default db"
+          },
+          {
+            "html": "Each step runs once, in order, and the <code>cow_migrations</code> table records it. Pending steps run in one transaction under an advisory lock, so two servers never migrate at once. When nothing is pending, <code>migrate()</code> reads one row."
+          },
+          {
+            "html": "<strong>Warning:</strong> Never edit, reorder, or remove a step that has run. Add new steps to the end of the list."
+          }
+        ]
+      },
+      {
+        "id": "options",
+        "title": "Connection options",
+        "blocks": [
+          {
+            "label": "Options",
+            "code": "await postgres(process.env.DATABASE_URL, {\n  max: 5,                // connections in each worker's pool\n  connectTimeout: 10000, // milliseconds\n  idleTimeout: 30000,    // milliseconds\n  statementTimeout: 0,   // milliseconds, 0 means no limit\n  ssl: { rejectUnauthorized: true }\n})"
+          },
+          {
+            "html": "A site can open up to workers × <code>max</code> connections. Keep that below the server's <code>max_connections</code>. Sessions from <code>cow:web</code> still need a SQLite file."
+          }
+        ]
+      }
+    ],
+    "related": [
+      "sqlite",
+      "sessions",
       "reference"
     ]
   },
