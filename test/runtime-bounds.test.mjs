@@ -307,7 +307,9 @@ test('a page that follows cow.signal stops early after the client disconnects', 
   const f = await fixture(t)
   await f.write('wait.jsp', `<?js
     import { writeFile } from 'node:fs/promises';
+    await writeFile(__dirname+'/_started','yes');
     await new Promise((resolve, reject) => {
+      if (cow.signal.aborted) return reject(cow.signal.reason);
       const timer = setTimeout(resolve, 5000);
       cow.signal.addEventListener('abort', () => { clearTimeout(timer); reject(cow.signal.reason) });
     });
@@ -318,7 +320,8 @@ test('a page that follows cow.signal stops early after the client disconnects', 
   const controller = new AbortController()
   const running = f.app.execute({ url: '/wait' }, { signal: controller.signal })
   const rejected = assert.rejects(running, { code: 'COW_REQUEST_CANCELLED' })
-  await waitFor(() => f.app.runtime.status().busyWorkers === 1)
+  // Disconnect once the page runs, so the abort reaches it rather than its module loading.
+  await waitFor(async () => (await f.read('_started').catch(() => '')) === 'yes')
   const cancelledAt = performance.now()
   controller.abort()
   await rejected
