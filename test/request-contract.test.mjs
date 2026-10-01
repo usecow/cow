@@ -194,6 +194,17 @@ test('Cow request contract: returned data has request-owned prototypes and binar
   assert.deepEqual([...result.response.body],[3,4])
 })
 
+test('Cow request contract: dates cross the native boundary as dates in both directions', async t => {
+  const f = await fixture(t)
+  await f.write('node_modules/clock/package.json', JSON.stringify({name:'clock',type:'module',exports:'./index.mjs',cow:{native:['./index.mjs']}}))
+  await f.write('node_modules/clock/index.mjs', 'export const epoch=()=>({at:new Date(0)}); export const inspect=([value])=>[value instanceof Date, value.getTime()];')
+  await f.write('index.jsp', `<?js import {epoch,inspect} from 'clock'; import {statSync} from 'node:fs';
+    const {at}=epoch(), mtime=statSync(__filename).mtime;
+    res.json({at:at instanceof Date, iso:at.toISOString(), json:JSON.parse(JSON.stringify({at})).at, mtime:mtime instanceof Date && mtime.getTime()>0,
+      back:inspect([new Date(5)])}); ?>`)
+  assert.deepEqual(await f.request(), {at:true, iso:'1970-01-01T00:00:00.000Z', json:'1970-01-01T00:00:00.000Z', mtime:true, back:[true,5]})
+})
+
 test('Cow request contract: filesystem callbacks and native promise continuations drain even on failure', async t => {
   const f = await fixture(t)
   await f.write('old.jsp', `<?js import {writeFile,appendFile} from 'node:fs'; import {setTimeout as delay} from 'node:timers/promises';
