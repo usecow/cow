@@ -278,3 +278,27 @@ test('migrate() runs each step once, in order, and records progress in user_vers
     await assert.rejects(db.migrate('CREATE TABLE x (id)'), { code: 'COW_SQLITE_MIGRATION_INVALID' })
   })
 })
+
+test('refuses values SQLite cannot store instead of silently binding NULL', async () => {
+  await request(async () => {
+    const db = await sqlite(':memory:')
+    db.exec('CREATE TABLE stamps (at)')
+    const invalid = (message) => ({ code: 'COW_SQLITE_PARAMETER_INVALID', message })
+    // node:sqlite alone reads a lone Date as an empty set of named parameters.
+    assert.throws(() => db.run('INSERT INTO stamps VALUES (?)', [new Date(0)]),
+      invalid('SQLite cannot store a Date in parameter 1. Pass date.toISOString() for text or date.getTime() for a number.'))
+    assert.throws(() => db.get('SELECT ?', new Date(0)), invalid(/a Date in parameter 1/))
+    assert.throws(() => db.get('SELECT $at', { at: new Date(0) }), invalid(/a Date in parameter at/))
+    assert.throws(() => db.get('SELECT ?, ?', ['x', true]), invalid('SQLite cannot store a boolean in parameter 2. Pass 1 or 0.'))
+    assert.throws(() => db.get('SELECT ?', [undefined]), invalid('SQLite cannot store undefined in parameter 1. Pass null for SQL NULL.'))
+    assert.throws(() => db.get('SELECT ?', [new Map()]), invalid(/a Map in parameter 1/))
+    assert.throws(() => db.get('SELECT ?', [new ArrayBuffer(1)]), invalid(/an ArrayBuffer in parameter 1/))
+    assert.throws(() => db.get('SELECT ?', [{}]), invalid(/an object in parameter 1/))
+    assert.equal(db.get('SELECT count(*) AS n FROM stamps').n, 0)
+
+    // Everything SQLite stores still binds.
+    const values = [null, 1.5, 2n, 'text', new Uint8Array([1]), new Date(0).toISOString()]
+    assert.equal(db.run(`INSERT INTO stamps VALUES ${values.map(() => '(?)').join(', ')}`, values).changes, 6)
+    assert.equal(db.get('SELECT at FROM stamps WHERE at = ?', 'text').at, 'text')
+  })
+})

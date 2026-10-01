@@ -639,6 +639,9 @@ export const docs = [
             "code": "<ul>\n    <li>A little idea</li>\n</ul>"
           },
           {
+            "html": "Parameters can be strings, numbers, bigints, <code>null</code>, or bytes. Store a date as <code>date.toISOString()</code> or <code>date.getTime()</code>, and a boolean as <code>1</code> or <code>0</code>. Other values fail with <code>COW_SQLITE_PARAMETER_INVALID</code>."
+          },
+          {
             "html": "<strong>Warning:</strong> Use parameters for values instead of inserting user text into SQL strings. Protect write actions with the authorization and form checks that your application needs."
           }
         ]

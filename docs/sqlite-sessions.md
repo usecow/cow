@@ -217,6 +217,14 @@ Parameters can be:
 - An object, for named placeholders such as `$pattern`.
 - One scalar, for one placeholder.
 
+SQLite stores strings, numbers, bigints, `null`, and bytes such as a
+`Uint8Array`. Any other value fails with `COW_SQLITE_PARAMETER_INVALID`:
+
+- For a `Date`, pass `date.toISOString()` to store text or `date.getTime()` to
+  store a number.
+- For a boolean, pass `1` or `0`.
+- For `undefined`, pass `null`.
+
 These operations are synchronous because `node:sqlite` is synchronous. Only
 acquiring the database and managed transaction callbacks use `await`.
 
