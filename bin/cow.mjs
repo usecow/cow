@@ -41,7 +41,7 @@ program
   .addOption(new Option('--resource-limit <count>', 'persistent resource instances per execution worker').default('64').argParser(Number))
   .addOption(new Option('--adapter-limit <count>', 'resource adapter registrations per worker').default('128').argParser(Number))
   .addOption(new Option('--namespace-limit <count>', 'direct external module roots before worker recycling').default('256').argParser(Number))
-  .addOption(new Option('--source-limit <bytes>', 'maximum template source size').default('1048576').argParser(Number))
+  .addOption(new Option('--source-limit <bytes>', 'maximum source bytes per page, include or imported module').default('1048576').argParser(Number))
   .addOption(new Option('--compile-timeout <milliseconds>', 'cold compilation execution deadline').default('5000').argParser(Number))
   .addOption(new Option('--compile-max-pending <count>', 'maximum cold compiles including reads and queueing').default('8').argParser(Number))
   .addOption(new Option('--compiled-buffer-limit <bytes>', 'estimated compiled-template bytes retained by admitted requests').default('16777216').argParser(Number))

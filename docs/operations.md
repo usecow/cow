@@ -88,13 +88,18 @@ counters and admission rejections.
 | --- | ---: | --- |
 | `--cache-entries` | 256 | Entries in each compiler cache. 0 disables retention. |
 | `--cache-bytes` | 16777216 | Estimated retained bytes per compiler cache. 0 disables retention. |
-| `--source-limit` | 1048576 | Source bytes per Cow, JSP, or TSP entry page or include. |
+| `--source-limit` | 1048576 | Source bytes per page, include, or imported module. `cow check` takes the same flag. |
 | `--compile-max-pending` | 8 | Concurrent cold entry-page compilations, including source reads and queueing. |
 | `--compile-timeout` | 5000 ms | The CPU transformation deadline in the dedicated compiler worker. |
 | `--compiled-buffer-limit` | 16777216 | Estimated compiled-template bytes retained by admitted requests. |
 | `--resource-limit` | 64 | Persistent adapter instances per execution worker. |
 | `--adapter-limit` | 128 | Adapter definitions per execution worker. |
 | `--namespace-limit` | 256 | Direct external import roots per execution worker. |
+
+> **Note:** Keep large data out of source modules. Cow evaluates modules fresh
+> for every request, so a multi-megabyte data module is parsed again each time.
+> Store large data in a file, such as JSON or a binary format, and read the part
+> that a request needs.
 
 These limits produce the following errors:
 
