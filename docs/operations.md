@@ -251,7 +251,8 @@ When a slot keeps failing:
 
 To stop Cow, send `SIGINT` or `SIGTERM`, or call `app.close()`. Cow stops
 accepting new connections, drains active HTTP requests, and then terminates
-its workers.
+its workers. A worker that is still starting has run no page, so close stops
+it at once rather than waiting for it to finish loading.
 
 `--shutdown-timeout` (default 5000 ms) is one total budget shared by HTTP
 draining and worker cleanup. It is not a fresh timeout for each stage. Normal

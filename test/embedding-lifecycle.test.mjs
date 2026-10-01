@@ -10,6 +10,8 @@ import { test } from 'node:test'
 import { CowApp, CowServer, WorkerPool } from '../lib/app.mjs'
 import { isBrowserPort } from '../lib/http-policy.mjs'
 
+const stalledStartupWorker = new URL('./fixtures/stalled-startup-worker.mjs', import.meta.url)
+
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'cow-embedding-'))
   const app = new CowApp({ rootDir: root, port: 0, workers: 1, logger: { error() {} } })
@@ -65,6 +67,13 @@ test('close wins before filesystem initialization and cannot resurrect after res
 
 test('close during worker startup rejects new work and drains all startup workers', async t => {
   const { app, pools } = await fixture(t)
+  // The first pair of pools never finishes starting, however fast the host,
+  // so close always lands during startup; the restart uses real workers.
+  const start = WorkerPool.prototype.start
+  WorkerPool.prototype.start = function(...args) {
+    if (pools.size < 2) this.workerURL = stalledStartupWorker
+    return start.apply(this, args)
+  }
   const pending = Promise.allSettled([app.start(), app.initialize()])
   await waitFor(() => pools.size === 2)
   const closed = app.close()
@@ -72,11 +81,26 @@ test('close during worker startup rejects new work and drains all startup worker
   await assert.rejects(app.initialize(), { code: 'COW_APP_CLOSING' })
   assert.throws(() => app.execute({ url: '/' }), { code: 'COW_APP_CLOSING' })
   await closed
-  assert.ok((await pending).every(result => result.status === 'rejected'))
+  assert.ok((await pending).every(result => result.status === 'rejected' && result.reason.code === 'COW_APP_CLOSING'))
   for (const pool of pools) assert.equal(pool.workers.length, 0)
   assert.equal(app.status().state, 'stopped')
   await app.start()
   assert.equal(Buffer.from((await app.execute({ url: '/' })).response.body).toString(), 'okay')
+})
+
+test('closing a pool during worker startup stops the workers instead of awaiting a shutdown reply', async t => {
+  // A starting worker has run no page and holds nothing to close. Waiting for
+  // it to load and acknowledge shutdown failed close on a busy host.
+  const pool = new WorkerPool({ size: 2 })
+  pool.workerURL = stalledStartupWorker
+  t.after(() => pool.close())
+  const started = assert.rejects(pool.start(), { code: 'COW_RUNTIME_CLOSING' })
+  const exits = pool.workers.map(slot => new Promise(resolve => slot.worker.once('exit', resolve)))
+  await pool.close()
+  await started
+  await Promise.all(exits)
+  assert.equal(pool.workers.length, 0)
+  assert.equal(pool.status().state, 'stopped')
 })
 
 test('failed listen releases both pools and allows a later start', async t => {
