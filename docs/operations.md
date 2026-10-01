@@ -185,8 +185,11 @@ The budgets leave out the following:
 
 - Cow removes queued requests on client disconnect or queue expiry, and never
   runs them later.
-- A disconnect during execution terminates that worker and replaces it. Cleanup
-  hooks are not guaranteed.
+- A disconnect during execution does not stop the page. Cow answers the caller
+  at once, aborts the request's `cow.signal`, and lets the page run to its end
+  on the same worker. A write in progress completes, and cleanup hooks run.
+  Code that follows `cow.signal`, such as `fetch`, stops early. A page that
+  ignores it still ends at `--timeout`, which replaces its worker.
 - Cow never retries a request automatically.
 - Embedded callers can pass `app.execute(request, { signal })` for the same
   cancellation policy.

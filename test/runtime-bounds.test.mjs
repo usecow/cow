@@ -278,12 +278,12 @@ test('disconnected queued requests are removed and never mutate data', async (t)
   assert.equal(f.app.runtime.status().workersSpawned, 1)
 })
 
-test('active cancellation terminates execution without retry and restores capacity', async (t) => {
+test('client cancellation answers at once and lets the page finish once on the same worker', async (t) => {
   const f = await fixture(t)
   await f.write('slow.jsp', `<?js
-    import { writeFile } from 'node:fs/promises';
+    import { appendFile } from 'node:fs/promises';
     await new Promise(r => setTimeout(r, 500));
-    await writeFile(__dirname+'/_mutation','bad');
+    await appendFile(__dirname+'/_mutation','done;');
   ?>`)
   await f.write('index.jsp', 'healthy')
   await f.start()
@@ -293,10 +293,39 @@ test('active cancellation terminates execution without retry and restores capaci
   await waitFor(() => f.app.runtime.status().busyWorkers === 1)
   controller.abort()
   await rejected
+  // The page was partway through; it finishes its write exactly once.
   assert.equal(await (await fetch(f.app.address().url)).text(), 'healthy')
-  await delay(550)
-  await assert.rejects(f.read('_mutation'), { code: 'ENOENT' })
-  assert.equal(f.app.runtime.status().workersSpawned, 2)
+  await waitFor(() => f.read('_mutation').then(() => true, () => false))
+  await delay(100)
+  assert.equal(await f.read('_mutation'), 'done;')
+  const status = f.app.runtime.status()
+  assert.equal(status.workersSpawned, 1, 'the worker was not killed')
+  assert.equal(status.requestsAbandoned, 1)
+})
+
+test('a page that follows cow.signal stops early after the client disconnects', async (t) => {
+  const f = await fixture(t)
+  await f.write('wait.jsp', `<?js
+    import { writeFile } from 'node:fs/promises';
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(resolve, 5000);
+      cow.signal.addEventListener('abort', () => { clearTimeout(timer); reject(cow.signal.reason) });
+    });
+    await writeFile(__dirname+'/_late','reached');
+  ?>`)
+  await f.write('index.jsp', 'healthy')
+  await f.start()
+  const controller = new AbortController()
+  const running = f.app.execute({ url: '/wait' }, { signal: controller.signal })
+  const rejected = assert.rejects(running, { code: 'COW_REQUEST_CANCELLED' })
+  await waitFor(() => f.app.runtime.status().busyWorkers === 1)
+  const cancelledAt = performance.now()
+  controller.abort()
+  await rejected
+  await waitFor(() => f.app.runtime.status().busyWorkers === 0)
+  assert.ok(performance.now() - cancelledAt < 2000, 'the worker was freed long before the page timer')
+  await assert.rejects(f.read('_late'), { code: 'ENOENT' })
+  assert.equal(f.app.runtime.status().workersSpawned, 1)
 })
 
 test('startup has a deadline and a failed start leaves no workers', async () => {

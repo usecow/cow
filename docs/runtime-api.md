@@ -267,7 +267,7 @@ The status line becomes `HTTP/1.1 301 Moved Permanently`.
 
 | Binding | Description |
 | --- | --- |
-| `cow.signal` | An `AbortSignal` that is aborted when the request is torn down. |
+| `cow.signal` | An `AbortSignal` that is aborted when the client disconnects or the request is torn down. The page keeps running; use the signal to stop work early. |
 | `cow.onCleanup(callback)` | Registers request-owned cleanup work. `cow.defer(callback)` does the same. |
 | `cow.track(promise)` | Keeps a native or package operation in the request's drain barrier. To handle its result or rejection, await the returned promise. |
 | `cow.info(options)` | Finishes the response with a diagnostic report. See [diagnostics](#diagnostics). |

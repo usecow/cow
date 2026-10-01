@@ -272,8 +272,9 @@ send bytes earlier, await one of the three streaming calls.
 - The streaming calls require mutable headers, replace uncommitted output, and
   keep the request alive through normal release/cleanup.
 - Late errors cannot replace bytes already sent.
-- Cancellation may terminate the worker. Committed writes and transmitted
-  bytes cannot be undone.
+- Cancellation aborts `cow.signal` and lets the page finish on its worker;
+  only the execution timeout terminates a worker. Committed writes and
+  transmitted bytes cannot be undone.
 
 ### Site error pages
 

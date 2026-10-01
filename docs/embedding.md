@@ -130,6 +130,11 @@ during routing, source reads, compilation, queueing, or execution, and to an
 already-aborted signal. When Cow wraps the JavaScript runtime's abort errors
 and caller-supplied reasons, it retains them as `cause`.
 
+During execution, cancellation does not stop the page. Cow aborts the page's
+`cow.signal` and lets it run to its end on the same worker, so a write in
+progress completes. The execution timeout still ends a page that never
+finishes.
+
 > **Warning:** Cancellation never retries a request or rolls back writes that
 > already committed.
 

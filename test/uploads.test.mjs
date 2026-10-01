@@ -233,7 +233,9 @@ test('accepted upload work drains after render failure and cleanup hooks can sti
 })
 
 test('cancellation after parsing uploads leaves no spool files and a replacement worker stays usable', async t => {
-  const f = await site(t)
+  // A page that never yields cannot see the cancellation; its execution
+  // timeout replaces the worker.
+  const f = await site(t, { timeout: 1500 })
   await writeFile(join(f.root, 'cancel.jsp'), `<?js
     import {writeFileSync} from 'node:fs'; await req.formData(); writeFileSync(__dirname+'/_parsed','yes');
     while(true) {} ?>`)
