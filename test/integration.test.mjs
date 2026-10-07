@@ -178,6 +178,52 @@ test('static files carry validators and answer unchanged re-checks with 304', as
   assert.equal(await edited.text(), 'a { color: darkgreen }\n')
 })
 
+test('static files answer byte ranges, as video players ask', async () => {
+  const file = join(temporaryRoot, 'clip.webm')
+  await writeFile(file, '0123456789')
+  const whole = await fetch(`${baseUrl}/clip.webm`)
+  assert.equal(whole.status, 200)
+  assert.equal(whole.headers.get('content-type'), 'video/webm')
+  assert.equal(whole.headers.get('accept-ranges'), 'bytes')
+  assert.equal(await whole.text(), '0123456789')
+  const etag = whole.headers.get('etag'), lastModified = whole.headers.get('last-modified')
+
+  for (const [range, body, contentRange] of [['bytes=2-5', '2345', 'bytes 2-5/10'], ['bytes=7-', '789', 'bytes 7-9/10'],
+    ['bytes=-3', '789', 'bytes 7-9/10'], ['bytes=8-99', '89', 'bytes 8-9/10'], ['bytes=0-1', '01', 'bytes 0-1/10']]) {
+    const part = await fetch(`${baseUrl}/clip.webm`, { headers: { range } })
+    assert.equal(part.status, 206, range)
+    assert.equal(part.headers.get('content-range'), contentRange, range)
+    assert.equal(part.headers.get('content-length'), String(body.length), range)
+    assert.equal(await part.text(), body, range)
+  }
+  const head = await fetch(`${baseUrl}/clip.webm`, { method: 'HEAD', headers: { range: 'bytes=0-1' } })
+  assert.equal(head.status, 206)
+  assert.equal(await head.text(), '')
+
+  for (const range of ['bytes=10-', 'bytes=12-15', 'bytes=-0']) {
+    const beyond = await fetch(`${baseUrl}/clip.webm`, { headers: { range } })
+    assert.equal(beyond.status, 416, range)
+    assert.equal(beyond.headers.get('content-range'), 'bytes */10', range)
+    await beyond.text()
+  }
+
+  // several ranges, another unit, a backwards range, or a stale If-Range: the whole file
+  for (const headers of [{ range: 'bytes=0-1,4-5' }, { range: 'items=0-1' }, { range: 'bytes=5-2' },
+    { range: 'bytes=0-1', 'if-range': etag }, { range: 'bytes=0-1', 'if-range': 'Thu, 01 Jan 1970 00:00:00 GMT' }]) {
+    const all = await fetch(`${baseUrl}/clip.webm`, { headers })
+    assert.equal(all.status, 200, JSON.stringify(headers))
+    assert.equal(await all.text(), '0123456789', JSON.stringify(headers))
+  }
+  const current = await fetch(`${baseUrl}/clip.webm`, { headers: { range: 'bytes=0-1', 'if-range': lastModified } })
+  assert.equal(current.status, 206)
+  assert.equal(await current.text(), '01')
+
+  await writeFile(join(temporaryRoot, 'clip.mp4'), 'mp4')
+  const mp4 = await fetch(`${baseUrl}/clip.mp4`)
+  assert.equal(mp4.headers.get('content-type'), 'video/mp4')
+  await mp4.text()
+})
+
 test('handles HEAD without sending a response body', async () => {
   const response = await fetch(`${baseUrl}/?name=Cow`, { method: 'HEAD' })
   assert.equal(response.status, 200)
