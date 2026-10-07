@@ -1,6 +1,6 @@
 {
   "name": "@cowlang/cow",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Cow, a web runtime for JavaScript and TypeScript pages, fresh on every request",
   "homepage": "https://cowlang.com",
   "type": "module",
